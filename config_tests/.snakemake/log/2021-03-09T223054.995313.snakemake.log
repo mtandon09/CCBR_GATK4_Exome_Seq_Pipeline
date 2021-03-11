@@ -1,0 +1,5 @@
+Building DAG of jobs...
+MissingInputException in line 498 of /gpfs/gsfs9/users/MyPART/mt_tools/tumor_normal_pipeline/skeleton/tumor_normal_hg38.snakemake:
+Missing input files for rule mutect:
+/gpfs/gsfs9/users/MyPART/mt_tools/tumor_normal_pipeline/skeleton/tn_out_1/bams/chrom_split/Sample10_ARK1_S37.test.chr1.split.bam.bai
+/gpfs/gsfs9/users/MyPART/mt_tools/tumor_normal_pipeline/skeleton/tn_out_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr1.split.bam.bai
