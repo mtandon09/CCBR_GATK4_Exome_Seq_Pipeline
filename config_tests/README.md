@@ -19,7 +19,7 @@ Depending on options defined in the config file, several combinations are possib
 ---------------------------------------------------
 ## Start from FASTQ files
 
-This is the relevant split of the [config file to start from FASTQ](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/fromfq.json). `FASTQ_SOURCE` is a directory that contains paired fastq files, and `BAM_SOURCE` is left blank.
+This is the relevant bit of the [config file to start from FASTQ](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/fromfq.json). `FASTQ_SOURCE` is a directory that contains paired fastq files, and `BAM_SOURCE` is left blank.
 ```
 ...
   "input_params": {
@@ -40,7 +40,7 @@ This is the relevant split of the [config file to start from FASTQ](https://gith
 ---------------------------------------------------
 ## Start from BAM files
 
-This is the relevant split of the [config file to start from BAM](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/frombam.json). `BAM_SOURCE` is a directory that contains pre-processed BAM files, and `FASTQ_SOURCE` is left blank.
+This is the relevant bit of the [config file to start from BAM](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/frombam.json). `BAM_SOURCE` is a directory that contains pre-processed BAM files, and `FASTQ_SOURCE` is left blank.
 ```
 ...
   "input_params": {
@@ -61,7 +61,7 @@ This is the relevant split of the [config file to start from BAM](https://github
 ---------------------------------------------------
 ## Add copy number variant (CNV) calling
 
-This is the relevant split of the [config file to include CNV calling](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/withcnv.json).
+This is the relevant bit of the [config file to include CNV calling](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/withcnv.json).
 `CNV_CALLING` can be set to any of (case-insensitive) `true`, `t`, or `yes`.
 ```
 ...
@@ -84,7 +84,7 @@ This is the relevant split of the [config file to include CNV calling](https://g
 
 Currently using [`SOBDetector`](https://github.com/mikdio/SOBDetector) to flag FFPE artifacts for somatic calls only. 
 
-This is the relevant split of the [config file to include FFPE artifact filtering](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/withffpe.json) due to **S**trand **O**rientation **B**ias.
+This is the relevant bit of the [config file to include FFPE artifact filtering](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/example_configs/withffpe.json) due to **S**trand **O**rientation **B**ias.
 `FFPE_FILTER` can be set to any of (case-insensitive) `true`, `t`, or `yes`.
 
 ```
