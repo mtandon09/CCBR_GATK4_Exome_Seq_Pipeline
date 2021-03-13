@@ -18,10 +18,10 @@ We can also control these parameters with the `run.sh` script in the pipeline sk
 
 ```
 usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM]
-              [--pairs PAIRS] [--targets TARGETS] [--ffpe FFPE] [--cnv CNV]
-              [--outdir OUTDIR] [--dryrun DRYRUN] [--unlock UNLOCK]
-              [--until UNTIL] [--local LOCAL] [--slurmdir SLURMDIR]
-              [--rulegraph RULEGRAPH] [--config CONFIG]
+              [--pairs PAIRS] [--callers CALLERS] [--targets TARGETS]
+              [--ffpe FFPE] [--cnv CNV] [--outdir OUTDIR] [--dryrun DRYRUN]
+              [--unlock UNLOCK] [--until UNTIL] [--local LOCAL]
+              [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--config CONFIG]
 
 Run muh pipelinezz
 
@@ -37,6 +37,9 @@ optional arguments:
                         tumor and normal sample IDs, one pair per line. The
                         header needs to be 'Tumor' for the tumor column and
                         'Normal' for the normal column.
+  --callers CALLERS     [input_params] list of mutation callers, comma-
+                        separated in single quotes. Default:
+                        "'mutect2','mutect','strelka','vardict','varscan'"
   --targets TARGETS     [input_params] Path to exome targets BED file
   --ffpe FFPE           [input_params] Add FFPE filtering step (set to one of
                         'true', 't', or 'yes' (case-insensitive))
@@ -59,16 +62,36 @@ optional arguments:
                         arguments.
 ```
 
+At a minimum, these arguments must be provided
+- `--pairs`
+- `--targets`
+- At least one of `--sourcefq` or `--sourcebam`
+
+
+FASTQs for testing can be found here: `/data/tandonm/pl_test_data/human/fastq`
+BAMs for testing can be found here: `/data/tandonm/pl_test_data/human/bams`
+
+```
+pipeline_dir="../skeleton/"
+test_data_fq="/data/tandonm/pl_test_data/human/fastq"
+test_data_bam="/data/tandonm/pl_test_data/human/bams"
+pairs_file="pairs.tsv"
+
+pngdir="$(pwd)/rulegraphs"  ## Where to output rule graph PNGs
+```
+
 ---------------------------------------------------
 ## Start from FASTQ files
 
-This is the default setting in the config file provided.  This rulegraph can be generated with the following command on Biowulf:
+This rulegraph can be generated with the following command on Biowulf:
 ```
-## Default (uses params defined in the references_hg38.json)
-./run.sh --rulegraph "$pngdir/rules.default.png"
+## Start from Fastq
+./run.sh --rulegraph "$pngdir/rules.fromFQ.png" \
+         --pairs "$pairs_file" \
+         --sourcefq "$test_data_fq"
 ```
 
-![Start from fastq files](rulegraphs/rules.default.png)
+![Start from fastq files](rulegraphs/rules.fromFQ.png)
 
 
 
@@ -79,8 +102,9 @@ This is the default setting in the config file provided.  This rulegraph can be 
 If the fastq directory does not contain fastq files, the BAM directory will be used automatically.
 ```
 ## Start from BAM files
-# Since the config file already contains a source fastq parameter, need to override it with a non-existent filepath
-./run.sh --rulegraph "$pngdir/rules.fromBAM.png" --sourcefq "foo" --sourcebam "/data/tandonm/pl_test_data/human/bams"
+./run.sh --rulegraph "$pngdir/rules.fromBAM.png" \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam"
 ```
 
 ![Start from BAM files](rulegraphs/rules.fromBAM.png)
@@ -94,8 +118,11 @@ If the fastq directory does not contain fastq files, the BAM directory will be u
 This is turned off by default, so use the option in `run.sh` to turn it on.
 ```
 ## Add CNV calling
-# Should be set of one of 'true', 't', or 'yes' (case-insensitive)
-./run.sh --rulegraph "$pngdir/rules.CNV.png" --sourcefq "foo" --cnv "True"
+## Should be set of one of 'true', 't', or 'yes' (case-insensitive)
+./run.sh --rulegraph "$pngdir/rules.CNV.png" \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam" \
+         --cnv "True"
 ```
 
 ![With CNV calling](rulegraphs/rules.CNV.png)
@@ -109,8 +136,11 @@ Currently using [`SOBDetector`](https://github.com/mikdio/SOBDetector) to flag F
 This is turned off by default, so use the option in `run.sh` to turn it on.
 ```
 ## Add FFPE filtering with SOBDetector
-# Should be set of one of 'true', 't', or 'yes' (case-insensitive)
-./run.sh --rulegraph "$pngdir/rules.FFPE.png" --sourcefq "foo" --ffpe "True"
+## Should be set of one of 'true', 't', or 'yes' (case-insensitive)
+./run.sh --rulegraph "$pngdir/rules.FFPE.png" \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam" \
+         --ffpe "True"
 ```
 
 ![With SOBDetector](rulegraphs/rules.FFPE.png)
@@ -127,14 +157,45 @@ The default config json file will run all six variant valling steps
 - `varscan`
 - Merged calls from all callers
 
-You can customize this with the command-line options.  To turn off a caller, set up a json string like below and set the value to an empty string.
+You can customize this with the `--callers` command-line option.  Each caller should be in single-quotes with commas between callers.
 ```
 ## Custom set of variant callers
-#  Might be better to set different defaults?
-custom_config_str="output_params={'SOMATIC_VCF':{'mutect2':'','mutect':''}}"
-./run.sh --rulegraph "$pngdir/rules.custom_callers.png" --config "$custom_config_str"
+##  Available options: 'mutect2','mutect','strelka','vardict','varscan'
+caller_str="'strelka','varscan'"
+./run.sh --rulegraph "$pngdir/rules.custom_callers.png" \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam" \
+         --callers "$caller_str"
 ```
 
 ![Custom caller set](rulegraphs/rules.custom_callers.png)
+
+
+Note that if a single caller is selected, the `merge_somatic_callers` step will be automatically omitted
+
+```
+./run.sh --rulegraph "$pngdir/rules.single_caller.png" \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam" \
+         --callers "'vardict'"
+```
+
+![Single caller](rulegraphs/rules.single_caller.png)
+
+And if you try to dry-run to that rule like this:
+```
+./run.sh --dryrun 1 \
+         --pairs "$pairs_file" \
+         --sourcebam "$test_data_bam" \
+         --callers "'mutect2'" \
+         --until merge_somatic_callers
+```
+
+Snakemake will determine that no jobs should be run.
+```
+[+] Loading snakemake  5.24.1 
+Building DAG of jobs...
+Nothing to be done.
+```
 
 
