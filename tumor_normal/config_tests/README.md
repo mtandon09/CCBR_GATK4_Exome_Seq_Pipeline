@@ -1,20 +1,23 @@
 # Configurable pipeline steps
 
-The configurable parameters are part of the `input_params` section of the [config JSON](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/config_tests/references_hg38.json).
+The configurable parameters are part of the `input_params` section of the [config JSON](https://github.com/mtandon09/exome_pipeline_dev_mt/blob/main/tumor_normal/skeleton/references_hg38.json).
 ```
 ...
-"input_params": {
+"input_params_test": {
       "FASTQ_SOURCE": "/data/tandonm/pl_test_data/human/fastq",
       "BAM_SOURCE": "/data/tandonm/pl_test_data/human/bams",
       "PAIRS_FILE": "pairs.tsv",
+      "VARIANT_CALLERS": ["mutect2","mutect","strelka","vardict","varscan"],
+      "BASE_OUTDIR": "tn_out_1",
+      "OTHER_SOMATIC_VCFS": {},
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
+      "GERMLINE": "false",
       "FFPE_FILTER": "false",
-      "CNV_CALLING": "false",
-      "BASE_OUTDIR": "tn_out_1"
-    },
+      "CNV_CALLING": "false"
+},
 ...
 ```
-We can also control these parameters with the `run.sh` script in the pipeline skeleton.  You can run `./run.sh --help` to display all available options.
+We can also control many of these parameters with the `run.sh` script in the pipeline skeleton.  You can run `./run.sh --help` to display all available options.
 
 ```
 usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM]
