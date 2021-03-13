@@ -1,0 +1,175 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	gatk_mutect2
+	1
+
+[Sat Mar 13 00:23:58 2021]
+rule gatk_mutect2:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr1.split.bam, /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample10_ARK1_S37.test.chr1.split.bam
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr1.vcf, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr1.f1r2.tar.gz, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr1.vcf.stats
+    jobid: 0
+    wildcards: samples=Sample10_ARK1_S37.test, chroms=chr1
+    threads: 2
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn4483 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn4483 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:24:04.365 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+Mar 13, 2021 12:24:04 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:24:04.627 INFO  Mutect2 - ------------------------------------------------------------
+00:24:04.628 INFO  Mutect2 - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:24:04.628 INFO  Mutect2 - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:24:04.628 INFO  Mutect2 - Executing as tandonm@cn4483 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:24:04.628 INFO  Mutect2 - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:24:04.628 INFO  Mutect2 - Start Date/Time: March 13, 2021 12:24:04 AM EST
+00:24:04.628 INFO  Mutect2 - ------------------------------------------------------------
+00:24:04.628 INFO  Mutect2 - ------------------------------------------------------------
+00:24:04.629 INFO  Mutect2 - HTSJDK Version: 2.21.0
+00:24:04.629 INFO  Mutect2 - Picard Version: 2.21.2
+00:24:04.629 INFO  Mutect2 - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:24:04.629 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:24:04.629 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:24:04.629 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:24:04.630 INFO  Mutect2 - Deflater: IntelDeflater
+00:24:04.630 INFO  Mutect2 - Inflater: IntelInflater
+00:24:04.630 INFO  Mutect2 - GCS max retries/reopens: 20
+00:24:04.630 INFO  Mutect2 - Requester pays: disabled
+00:24:04.630 INFO  Mutect2 - Initializing engine
+00:24:05.496 INFO  FeatureManager - Using codec VCFCodec to read file file:///data/CCBR_Pipeliner/db/PipeDB/lib/hg38.noCOSMIC_ClinVar.pon.vcf.gz
+00:24:05.760 INFO  FeatureManager - Using codec VCFCodec to read file file:///data/MA_shared/justin_wes_pipe/somatic-hg38-af-only-gnomad.hg38.vcf.gz
+00:24:05.968 INFO  IntervalArgumentCollection - Processing 248956422 bp from intervals
+00:24:06.088 INFO  Mutect2 - Done initializing engine
+00:24:06.225 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_utils.so
+00:24:06.227 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+00:24:06.295 INFO  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+00:24:06.295 INFO  IntelPairHmm - Available threads: 2
+00:24:06.295 INFO  IntelPairHmm - Requested threads: 4
+00:24:06.295 WARN  IntelPairHmm - Using 2 available threads, but 4 were requested
+00:24:06.295 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+00:24:06.477 INFO  ProgressMeter - Starting traversal
+00:24:06.477 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+00:24:16.537 INFO  ProgressMeter -         chr1:1001317              0.2                  3440          20516.9
+00:24:26.545 INFO  ProgressMeter -         chr1:1487345              0.3                  5290          15816.2
+00:24:36.569 INFO  ProgressMeter -         chr1:3464440              0.5                 12410          24744.1
+00:24:46.608 INFO  ProgressMeter -         chr1:6469498              0.7                 23080          34507.0
+00:24:56.609 INFO  ProgressMeter -         chr1:9423596              0.8                 33710          40345.5
+00:25:06.649 INFO  ProgressMeter -        chr1:11828965              1.0                 42490          42368.5
+00:25:16.651 INFO  ProgressMeter -        chr1:13878913              1.2                 49850          42622.6
+00:25:26.929 INFO  ProgressMeter -        chr1:16058411              1.3                 57700          43032.4
+00:25:37.301 INFO  ProgressMeter -        chr1:16583194              1.5                 59670          39419.1
+00:25:47.596 INFO  ProgressMeter -        chr1:16646855              1.7                 60000          35601.6
+00:25:59.074 INFO  ProgressMeter -        chr1:16759239              1.9                 60440          32206.9
+00:26:09.075 INFO  ProgressMeter -        chr1:19047051              2.0                 68680          33612.3
+00:26:19.103 INFO  ProgressMeter -        chr1:21612762              2.2                 77910          35246.5
+00:26:29.114 INFO  ProgressMeter -        chr1:23919804              2.4                 86290          36297.7
+00:26:39.123 INFO  ProgressMeter -        chr1:26446102              2.5                 95450          37518.2
+00:26:49.126 INFO  ProgressMeter -        chr1:28813608              2.7                104220          38446.0
+00:26:59.127 INFO  ProgressMeter -        chr1:32518146              2.9                117390          40795.8
+00:27:09.130 INFO  ProgressMeter -        chr1:35815375              3.0                129090          42405.0
+00:27:19.130 INFO  ProgressMeter -        chr1:39300192              3.2                141470          44059.5
+00:27:29.133 INFO  ProgressMeter -        chr1:41960577              3.4                150990          44703.3
+00:27:39.147 INFO  ProgressMeter -        chr1:44220091              3.5                159100          44886.4
+00:27:49.150 INFO  ProgressMeter -        chr1:46503960              3.7                167450          45120.0
+00:27:59.157 INFO  ProgressMeter -        chr1:51789372              3.9                185790          47908.7
+00:28:09.183 INFO  ProgressMeter -        chr1:54611078              4.0                195950          48441.3
+00:28:19.186 INFO  ProgressMeter -        chr1:59640180              4.2                213340          50652.7
+00:28:29.192 INFO  ProgressMeter -        chr1:65047662              4.4                232150          53019.4
+00:28:39.192 INFO  ProgressMeter -        chr1:71225086              4.5                253490          55770.3
+00:28:49.214 INFO  ProgressMeter -        chr1:78660674              4.7                278990          59204.8
+00:28:59.235 INFO  ProgressMeter -        chr1:86576546              4.9                306170          62748.8
+00:29:09.269 INFO  ProgressMeter -        chr1:92291324              5.0                326000          64598.8
+00:29:19.269 INFO  ProgressMeter -        chr1:98359416              5.2                346980          66558.0
+00:29:29.269 INFO  ProgressMeter -       chr1:106507384              5.4                374820          69670.9
+00:29:39.272 INFO  ProgressMeter -       chr1:109982597              5.5                387050          69781.7
+00:29:49.288 INFO  ProgressMeter -       chr1:113854904              5.7                400670          70126.7
+00:29:59.292 INFO  ProgressMeter -       chr1:118578535              5.9                417120          70935.8
+00:30:09.292 INFO  ProgressMeter -       chr1:132104621              6.0                462680          76515.0
+00:30:19.356 INFO  ProgressMeter -       chr1:146075587              6.2                509580          81996.6
+00:30:29.400 INFO  ProgressMeter -       chr1:149057886              6.4                520060          81487.9
+00:30:39.420 INFO  ProgressMeter -       chr1:151170531              6.5                527720          80579.6
+00:30:49.782 INFO  ProgressMeter -       chr1:152306174              6.7                531860          79125.2
+00:30:59.828 INFO  ProgressMeter -       chr1:153687763              6.9                536780          77916.5
+00:31:09.847 INFO  ProgressMeter -       chr1:155319323              7.1                542760          76920.0
+00:31:19.854 INFO  ProgressMeter -       chr1:156593101              7.2                547670          75823.6
+00:31:29.885 INFO  ProgressMeter -       chr1:158701034              7.4                555150          75120.4
+00:31:39.979 INFO  ProgressMeter -       chr1:160886080              7.6                562870          74469.8
+00:31:50.023 INFO  ProgressMeter -       chr1:162804386              7.7                569820          73755.8
+00:32:00.037 INFO  ProgressMeter -       chr1:168197242              7.9                588580          74573.0
+00:32:10.041 INFO  ProgressMeter -       chr1:171795697              8.1                601160          74591.2
+00:32:20.077 INFO  ProgressMeter -       chr1:176558294              8.2                617810          75098.5
+00:32:30.095 INFO  ProgressMeter -       chr1:180180695              8.4                630590          75127.2
+00:32:40.140 INFO  ProgressMeter -       chr1:183649526              8.6                642830          75087.9
+00:32:50.139 INFO  ProgressMeter -       chr1:188680004              8.7                660240          75648.8
+00:33:00.153 INFO  ProgressMeter -       chr1:197125469              8.9                689150          77479.6
+00:33:10.185 INFO  ProgressMeter -       chr1:201086646              9.1                703010          77579.5
+00:33:20.217 INFO  ProgressMeter -       chr1:202731746              9.2                708950          76817.6
+00:33:30.238 INFO  ProgressMeter -       chr1:204952441              9.4                717060          76315.3
+00:33:40.255 INFO  ProgressMeter -       chr1:207324401              9.6                725570          75872.9
+00:33:50.260 INFO  ProgressMeter -       chr1:211439886              9.7                739930          76048.5
+00:34:00.261 INFO  ProgressMeter -       chr1:215696861              9.9                754890          76279.3
+00:34:10.262 INFO  ProgressMeter -       chr1:221276187             10.1                774220          76936.7
+00:34:20.281 INFO  ProgressMeter -       chr1:225348193             10.2                788590          77085.5
+00:34:30.335 INFO  ProgressMeter -       chr1:228159624             10.4                798740          76819.4
+00:34:40.344 INFO  ProgressMeter -       chr1:230845384             10.6                808270          76508.5
+00:34:50.347 INFO  ProgressMeter -       chr1:235016340             10.7                822940          76686.9
+00:35:00.347 INFO  ProgressMeter -       chr1:236894915             10.9                829950          76157.3
+00:35:10.359 INFO  ProgressMeter -       chr1:241687960             11.1                846690          76521.7
+00:35:20.360 INFO  ProgressMeter -       chr1:246952183             11.2                865120          77027.0
+00:35:31.190 INFO  ProgressMeter -       chr1:248062990             11.4                869090          76156.6
+00:35:37.109 INFO  Mutect2 - 570904 read(s) filtered by: (((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  570904 read(s) filtered by: ((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter) AND GoodCigarReadFilter)
+      570904 read(s) filtered by: (((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter)
+          550578 read(s) filtered by: ((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+              550578 read(s) filtered by: (((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter)
+                  550578 read(s) filtered by: ((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+                      550578 read(s) filtered by: (((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+                          377150 read(s) filtered by: ((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+                              375553 read(s) filtered by: (((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter)
+                                  375553 read(s) filtered by: ((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter)
+                                      375553 read(s) filtered by: (MappingQualityReadFilter AND MappingQualityAvailableReadFilter)
+                                          375553 read(s) filtered by: MappingQualityReadFilter 
+                              1597 read(s) filtered by: NotSecondaryAlignmentReadFilter 
+                          173428 read(s) filtered by: NotDuplicateReadFilter 
+          20326 read(s) filtered by: ReadLengthReadFilter 
+
+00:35:37.110 INFO  ProgressMeter -       chr1:248955223             11.5                872183          75772.5
+00:35:37.110 INFO  ProgressMeter - Traversal complete. Processed 872183 total regions in 11.5 minutes.
+00:35:37.652 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.253289121
+00:35:37.652 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 34.391984333
+00:35:37.652 INFO  SmithWatermanAligner - Total compute time in java Smith-Waterman : 46.10 sec
+00:35:37.653 INFO  Mutect2 - Shutting down engine
+[March 13, 2021 12:35:37 AM EST] org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2 done. Elapsed time: 11.56 minutes.
+Runtime.totalMemory()=2087714816
+Tool returned:
+SUCCESS
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar Mutect2 -R /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample10_ARK1_S37.test.chr1.split.bam -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr1.split.bam -normal Sample4_CRL1622_S31.test --panel-of-normals /data/CCBR_Pipeliner/db/PipeDB/lib/hg38.noCOSMIC_ClinVar.pon.vcf.gz --germline-resource /data/MA_shared/justin_wes_pipe/somatic-hg38-af-only-gnomad.hg38.vcf.gz -L chr1 -O /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr1.vcf --f1r2-tar-gz /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr1.f1r2.tar.gz --independent-mates
+[Sat Mar 13 00:35:37 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

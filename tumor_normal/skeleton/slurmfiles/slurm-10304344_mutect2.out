@@ -1,0 +1,134 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	gatk_mutect2
+	1
+
+[Sat Mar 13 00:24:06 2021]
+rule gatk_mutect2:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr10.split.bam, /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample10_ARK1_S37.test.chr10.split.bam
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr10.vcf, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr10.f1r2.tar.gz, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr10.vcf.stats
+    jobid: 0
+    wildcards: samples=Sample10_ARK1_S37.test, chroms=chr10
+    threads: 2
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn2410 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn2410 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:24:10.409 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+Mar 13, 2021 12:24:10 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:24:10.633 INFO  Mutect2 - ------------------------------------------------------------
+00:24:10.633 INFO  Mutect2 - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:24:10.633 INFO  Mutect2 - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:24:10.633 INFO  Mutect2 - Executing as tandonm@cn2410 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:24:10.634 INFO  Mutect2 - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:24:10.634 INFO  Mutect2 - Start Date/Time: March 13, 2021 12:24:10 AM EST
+00:24:10.634 INFO  Mutect2 - ------------------------------------------------------------
+00:24:10.634 INFO  Mutect2 - ------------------------------------------------------------
+00:24:10.634 INFO  Mutect2 - HTSJDK Version: 2.21.0
+00:24:10.634 INFO  Mutect2 - Picard Version: 2.21.2
+00:24:10.634 INFO  Mutect2 - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:24:10.634 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:24:10.634 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:24:10.634 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:24:10.634 INFO  Mutect2 - Deflater: IntelDeflater
+00:24:10.634 INFO  Mutect2 - Inflater: IntelInflater
+00:24:10.634 INFO  Mutect2 - GCS max retries/reopens: 20
+00:24:10.634 INFO  Mutect2 - Requester pays: disabled
+00:24:10.635 INFO  Mutect2 - Initializing engine
+00:24:11.379 INFO  FeatureManager - Using codec VCFCodec to read file file:///data/CCBR_Pipeliner/db/PipeDB/lib/hg38.noCOSMIC_ClinVar.pon.vcf.gz
+00:24:11.556 INFO  FeatureManager - Using codec VCFCodec to read file file:///data/MA_shared/justin_wes_pipe/somatic-hg38-af-only-gnomad.hg38.vcf.gz
+00:24:11.752 INFO  IntervalArgumentCollection - Processing 133797422 bp from intervals
+00:24:11.823 INFO  Mutect2 - Done initializing engine
+00:24:11.902 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_utils.so
+00:24:11.904 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+00:24:11.956 INFO  IntelPairHmm - Using CPU-supported AVX-512 instructions
+00:24:11.956 INFO  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+00:24:11.957 INFO  IntelPairHmm - Available threads: 2
+00:24:11.957 INFO  IntelPairHmm - Requested threads: 4
+00:24:11.957 WARN  IntelPairHmm - Using 2 available threads, but 4 were requested
+00:24:11.957 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+00:24:12.115 INFO  ProgressMeter - Starting traversal
+00:24:12.115 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+00:24:22.115 INFO  ProgressMeter -        chr10:2125563              0.2                  7410          44460.0
+00:24:32.144 INFO  ProgressMeter -        chr10:5958088              0.3                 20770          62219.8
+00:24:42.161 INFO  ProgressMeter -       chr10:12015537              0.5                 41960          83791.5
+00:24:52.181 INFO  ProgressMeter -       chr10:15215355              0.7                 53550          80192.7
+00:25:02.321 INFO  ProgressMeter -       chr10:19391509              0.8                 68320          81647.6
+00:25:12.327 INFO  ProgressMeter -       chr10:26063068              1.0                 91640          91317.3
+00:25:22.329 INFO  ProgressMeter -       chr10:30235819              1.2                106500          91007.5
+00:25:32.330 INFO  ProgressMeter -       chr10:35229558              1.3                124190          92892.9
+00:25:42.330 INFO  ProgressMeter -       chr10:43624461              1.5                153190         101883.3
+00:25:52.349 INFO  ProgressMeter -       chr10:47991813              1.7                168430         100822.1
+00:26:02.383 INFO  ProgressMeter -       chr10:52314878              1.8                183520          99858.5
+00:26:12.386 INFO  ProgressMeter -       chr10:61388659              2.0                214670         107093.1
+00:26:22.428 INFO  ProgressMeter -       chr10:68423283              2.2                239110         110093.4
+00:26:32.439 INFO  ProgressMeter -       chr10:70777143              2.3                247740         105929.1
+00:26:42.457 INFO  ProgressMeter -       chr10:73354384              2.5                257170         102634.0
+00:26:52.457 INFO  ProgressMeter -       chr10:76427991              2.7                268220         100368.0
+00:27:02.461 INFO  ProgressMeter -       chr10:81954930              2.8                287440         101243.4
+00:27:12.489 INFO  ProgressMeter -       chr10:88769685              3.0                311210         103521.6
+00:27:22.503 INFO  ProgressMeter -       chr10:93694308              3.2                328610         103560.1
+00:27:32.506 INFO  ProgressMeter -       chr10:97580506              3.3                342490         102546.5
+00:27:42.508 INFO  ProgressMeter -      chr10:101359955              3.5                356080         101547.1
+00:27:52.511 INFO  ProgressMeter -      chr10:104399138              3.7                367160          99954.6
+00:28:02.519 INFO  ProgressMeter -      chr10:113809094              3.8                399670         104079.4
+00:28:12.547 INFO  ProgressMeter -      chr10:119577894              4.0                419950         104798.9
+00:28:22.551 INFO  ProgressMeter -      chr10:124992931              4.2                439000         105176.6
+00:28:32.554 INFO  ProgressMeter -      chr10:132473182              4.3                464980         107122.2
+00:28:37.544 INFO  Mutect2 - 158107 read(s) filtered by: (((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  158107 read(s) filtered by: ((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter) AND GoodCigarReadFilter)
+      158107 read(s) filtered by: (((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ReadLengthReadFilter)
+          149088 read(s) filtered by: ((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+              149088 read(s) filtered by: (((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonChimericOriginalAlignmentReadFilter)
+                  149088 read(s) filtered by: ((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+                      149088 read(s) filtered by: (((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+                          73615 read(s) filtered by: ((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+                              72771 read(s) filtered by: (((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter)
+                                  72771 read(s) filtered by: ((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter)
+                                      72771 read(s) filtered by: (MappingQualityReadFilter AND MappingQualityAvailableReadFilter)
+                                          72771 read(s) filtered by: MappingQualityReadFilter 
+                              844 read(s) filtered by: NotSecondaryAlignmentReadFilter 
+                          75473 read(s) filtered by: NotDuplicateReadFilter 
+          9019 read(s) filtered by: ReadLengthReadFilter 
+
+00:28:37.544 INFO  ProgressMeter -      chr10:133795992              4.4                469724         106180.7
+00:28:37.544 INFO  ProgressMeter - Traversal complete. Processed 469724 total regions in 4.4 minutes.
+00:28:37.758 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.08867593700000001
+00:28:37.758 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 4.606563469
+00:28:37.758 INFO  SmithWatermanAligner - Total compute time in java Smith-Waterman : 10.55 sec
+00:28:37.759 INFO  Mutect2 - Shutting down engine
+[March 13, 2021 12:28:37 AM EST] org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2 done. Elapsed time: 4.46 minutes.
+Runtime.totalMemory()=1954545664
+Tool returned:
+SUCCESS
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar Mutect2 -R /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample10_ARK1_S37.test.chr10.split.bam -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr10.split.bam -normal Sample4_CRL1622_S31.test --panel-of-normals /data/CCBR_Pipeliner/db/PipeDB/lib/hg38.noCOSMIC_ClinVar.pon.vcf.gz --germline-resource /data/MA_shared/justin_wes_pipe/somatic-hg38-af-only-gnomad.hg38.vcf.gz -L chr10 -O /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr10.vcf --f1r2-tar-gz /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/chrom_split/Sample10_ARK1_S37.test.chr10.f1r2.tar.gz --independent-mates
+[Sat Mar 13 00:28:38 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

@@ -142,15 +142,23 @@ def _sym_safe_(input_data, target):
 
     return input_fastqs
 
-
+def read_pairsfile(pairs_filepath):
+    ## Could add more error-checking here; file access, header names,...
+    if not os.path.isfile(pairs_filepath):
+        raise NameError("""\n\tFatal: A pairs file is required!
+        This is the path that was given in the config: {}
+        """.format(pairs_filepath, sys.argv[0])
+        )
+    df = pd.read_csv(pairs_filepath, header=0, sep='\t')
+    mydict = dict(zip(df['Tumor'].tolist(), df['Normal'].tolist()))
+    return mydict
 
 configfile:"references_hg38.json"
 
 ######### PARSE INPUTS #########
 #print(listdir(os.getcwd()))
 pairs_file = config['input_params']['PAIRS_FILE']
-df = pd.read_csv(pairs_file, header=0, sep='\t')
-pairs_dict = dict(zip(df['Tumor'].tolist(), df['Normal'].tolist()))
+pairs_dict = read_pairsfile(pairs_file)
 pairs_ids=list(pairs_dict.keys())
 
 ######### PARSE CONFIG PARAMS #########
@@ -158,7 +166,7 @@ BASEDIR=os.path.realpath(config['input_params']['BASE_OUTDIR'])
 input_fqdir=config['input_params']['FASTQ_SOURCE']
 fqs_found=glob.glob(os.path.join(input_fqdir,'*.fastq.gz'))
 
-input_bamdir=os.path.join(BASEDIR,config['input_params']['BAM_SOURCE'])
+input_bamdir=os.path.join(config['input_params']['BAM_SOURCE'])
 bams_found=glob.glob(os.path.join(input_bamdir,'*.bam'))
 
 output_fqdir=os.path.join(BASEDIR,config['output_params']['FASTQ'])
@@ -176,20 +184,18 @@ if fqs_found:
         name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
 elif bams_found:
     name_suffix=".recal.bam"
-    if [ os.path.exists(input_bamdir) ]:
-        if not os.path.exists(output_bamdir):
-            # print("making"+output_bamdir)
-            os.makedirs(output_bamdir) 
-
-        if (len(os.listdir(output_bamdir))==0):
-            # print("Symlinking source bams...")
-            bam_symlinks=_sym_safe_(bams_found, output_bamdir)
-        
-        name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
-    else:
-        print("BAM source directory not found.")
+    if not os.path.exists(output_bamdir):
+        os.makedirs(output_bamdir) 
+    if (len(os.listdir(output_bamdir))==0):
+        bam_symlinks=_sym_safe_(bams_found, output_bamdir)
+    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
 else:
-    exit("Neither BAMs nor FASTQs found")
+    raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
+        FASTQ source path provided: {}
+        BAM source path provided: {}
+        Folders should contain files ending with '.fastq.gz' or '.bam' respectively.
+        """.format(input_fqdir, input_bamdir, sys.argv[0])
+    )
 
 samples = set([re.sub(name_suffix,"",os.path.basename(fname)) for fname in name_symlinks]) ## Only returns paired fqs
 
@@ -198,29 +204,28 @@ output_somatic_base=os.path.join(BASEDIR,"somatic")
 output_somatic_snpindels=os.path.join(output_somatic_base,"SNP_Indels")
 output_somatic_cnv=os.path.join(output_somatic_base,"CNV")
 
-# print(glob.glob(os.path.join(dir_raw,'*.fastq.gz')))
-# print(fq_symlinks)
-# exit
-# samplesb=["Sample10_ARK1_S37.test","Sample11_ACI_158_S38.test","Sample4_CRL1622_S31.test"]
-# samplesb=all_samples
+chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY","chrM"]
 
-chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY"]
+# caller_dict=config['output_params']['SOMATIC_VCF']
+caller_list=[caller_name.lower() for caller_name in config['input_params']['VARIANT_CALLERS']]
+caller_list=list(set(caller_list) & set(config['available_somatic_callers']))
 
-caller_dict=config['output_params']['SOMATIC_VCF']
-caller_dict={k: v for k, v in caller_dict.items() if v}
-somatic_callers_dirs = list(caller_dict.values())
-somatic_callers_dirs.remove("merged_somatic_variants")
-# print(somatic_callers_dirs+["merged_somatic_variants"])
-merge_callers = list(caller_dict.keys())
-# print(merge_callers)
-merge_callers.remove("merged")
-merge_callers_rodlist=",".join([re.sub("_out","",caller) for caller in merge_callers])
-# print(merge_callers_rodlist)
+if not caller_list:
+    raise NameError("""\n\tFatal: Must define one or more variant caller!
+        """.format(input_fqdir, input_bamdir, sys.argv[0])
+    )
 
+somatic_callers_dirs = [caller + "_out" for caller in list(caller_list)]
 
-merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
-merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
-# print(merge_callers_args)
+samples_for_caller_merge=[]
+merge_callers_args=dict.fromkeys(pairs_ids)
+merge_callers_rodlist=",".join(caller_list)
+if (len(caller_list) > 1):
+    merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
+    merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
+    samples_for_caller_merge=pairs_ids
+
+merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
 
 VCF2MAF_WRAPPER="/data/tandonm/vcf2maf_testing/latest/vcf2maf_wrapper.bash"
 SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter","sobdetector")
@@ -232,7 +237,9 @@ ffpe_caller_list=[]
 ffpe_sample_list=[]
 if 'FFPE_FILTER' in config['input_params']:
     if config['input_params']['FFPE_FILTER'].lower() in ['true','t','yes']:
-        ffpe_caller_list=list(somatic_callers_dirs + ["merged_somatic_variants"])
+        ffpe_caller_list=somatic_callers_dirs
+        if ffpe_caller_list:
+            ffpe_caller_list=list(ffpe_caller_list + [merge_outdir])
         ffpe_sample_list=pairs_ids
     
   
@@ -241,6 +248,14 @@ if 'CNV_CALLING' in config['input_params']:
     if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
         cnv_sample_list=pairs_ids    
     
+# print(somatic_callers_dirs)
+# print(samples_for_caller_merge)
+# print(config['input_params']['FFPE_FILTER'].lower() )
+# print(ffpe_caller_list)
+# print(len(caller_list))
+# # print(pairs_dict)
+# print(merge_callers_args)
+# exit()
 #
 # Set rule all
 #
@@ -250,8 +265,8 @@ rule all:
         expand(os.path.join(output_bamdir,"{samples}.recal.bai"), samples=samples),
         expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
 
-        expand(os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),samples=pairs_ids),
-        expand(os.path.join(output_somatic_snpindels,"merged_somatic_variants","maf","{samples}.maf"),samples=pairs_ids),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"maf","{samples}.maf"),samples=samples_for_caller_merge),
         # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=pairs_ids, vc_outdir=somatic_callers),
         
         expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=somatic_callers_dirs),
@@ -266,7 +281,7 @@ rule all:
         expand(os.path.join(output_somatic_cnv,"freec_out","pass2","{samples}.recal.bam_CNVs.p.value.txt"), samples=cnv_sample_list),
         
         expand(os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.tumor.contamination.table"), samples=pairs_ids),
-        # os.path.join("merged_somatic_variants","maf","merged_oncoplot.pdf"),
+        # os.path.join(merge_outdir,"maf","merged_oncoplot.pdf"),
         # os.path.join("mutect_out","maf","mutect_oncoplot.pdf"),
         # os.path.join("mutect2_out","maf","mutect2_oncoplot.pdf"),
         # os.path.join("strelka_out","maf","strelka_oncoplot.pdf"),
@@ -620,9 +635,12 @@ rule merge_chrom_split:
                
 
 rule merge_somatic_callers:
-    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=merge_callers)
-    output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
-    params: genome=config['references']['GENOME'],rodprioritylist=merge_callers_rodlist, variantsargs=lambda w: [merge_callers_args[w.samples]], rname="MergeVariantCallers"
+    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=caller_list)
+    output: mergedvcf=os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),
+    params: genome=config['references']['GENOME'],
+            rodprioritylist=merge_callers_rodlist,
+            variantsargs=lambda w: [merge_callers_args[w.samples]],
+            rname="MergeSomaticCallers"
     shell: """
            if [ ! -d "$(dirname {output.mergedvcf})" ]; then
              mkdir -p "$(dirname {output.mergedvcf})"
@@ -768,7 +786,7 @@ rule sobdetect_metrics:
 #   
 # rule merge_ffpefilter_vcfs:
 #     input: vcf=expand(os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","vcf","{{samples}}.FINAL.vcf"), vc_outdir=merge_callers)
-#     output: mergedvcf=os.path.join(output_somatic_base,SOBDetector_out,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
+#     output: mergedvcf=os.path.join(output_somatic_base,SOBDetector_out,merge_outdir,"vcf","{samples}.FINAL.vcf"),
 #     params: genome=config['references']['GENOME'],rodprioritylist=merge_callers_rodlist, variantsargs=lambda w: [merge_callers_args[w.samples]], rname="MergeVariantCallers"
 #     shell: """
 #            myoutdir="$(dirname {output.mergedvcf})"

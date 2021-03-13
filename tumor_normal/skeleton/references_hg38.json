@@ -1,24 +1,31 @@
 {
     "input_params": {
+      "FASTQ_SOURCE": "",
+      "BAM_SOURCE": "",
+      "PAIRS_FILE": "",
+      "VARIANT_CALLERS": ["mutect2","mutect","strelka","vardict","varscan"],
+      "BASE_OUTDIR": "tn_out_1",
+      "OTHER_SOMATIC_VCFS": {},
+      "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
+      "GERMLINE": "false",
+      "FFPE_FILTER": "false",
+      "CNV_CALLING": "false"
+    },
+    "input_params_test": {
       "FASTQ_SOURCE": "/data/tandonm/pl_test_data/human/fastq",
       "BAM_SOURCE": "/data/tandonm/pl_test_data/human/bams",
       "PAIRS_FILE": "pairs.tsv",
+      "VARIANT_CALLERS": ["mutect2","mutect","strelka","vardict","varscan"],
+      "BASE_OUTDIR": "tn_out_1",
+      "OTHER_SOMATIC_VCFS": {},
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
       "FFPE_FILTER": "false",
-      "CNV_CALLING": "false",
-      "BASE_OUTDIR": "tn_out_1"
+      "CNV_CALLING": "false"
     },
     "output_params": {
       "FASTQ": "fastqs",
       "BAM": "bams",
-      "SOMATIC_VCF": {
-        "mutect2": "mutect2_out",
-        "strelka": "strelka_out",
-        "mutect": "mutect_out",
-        "vardict": "vardict_out",
-        "varscan": "varscan_out",
-        "merged": "merged_somatic_variants"
-      },
+      "MERGED_SOMATIC_OUTDIR": "merged_somatic_variants",
       "GERMLINE_VCF": {
         "GATK": "germline_joint_genotyping"
       }
@@ -73,6 +80,7 @@
         "Control-FREEC": "11.5",
         "R": "3.6.1"
     },
+    "available_somatic_callers": ["mutect2","mutect","strelka","vardict","varscan"],
     "not_used": {
         "1000G": "/data/GRIS_NCBR/resources/ALL.GRCh38_sites.nuclear.20170504.vcf.gz",
         "EXAC": "/data/GRIS_NCBR/resources/exacv1_grch38_release1_ExAC.r1.sites.liftover.GRCh38.vcf.gz",

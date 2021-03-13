@@ -1,0 +1,126 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	haplotypecaller
+	1
+
+[Sat Mar 13 00:20:36 2021]
+rule haplotypecaller:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/Sample10_ARK1_S37.test.chrY.g.vcf.gz, /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/Sample10_ARK1_S37.test.chrY.g.vcf.gz.tbi
+    jobid: 0
+    wildcards: samples=Sample10_ARK1_S37.test, chroms=chrY
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn2426 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn2426 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:20:41.425 WARN  GATKAnnotationPluginDescriptor - Redundant enabled annotation group (StandardAnnotation) is enabled for this tool by default
+Mar 13, 2021 12:20:41 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:20:41.691 INFO  HaplotypeCaller - ------------------------------------------------------------
+00:20:41.692 INFO  HaplotypeCaller - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:20:41.692 INFO  HaplotypeCaller - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:20:41.692 INFO  HaplotypeCaller - Executing as tandonm@cn2426 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:20:41.692 INFO  HaplotypeCaller - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:20:41.692 INFO  HaplotypeCaller - Start Date/Time: March 13, 2021 12:20:41 AM EST
+00:20:41.692 INFO  HaplotypeCaller - ------------------------------------------------------------
+00:20:41.692 INFO  HaplotypeCaller - ------------------------------------------------------------
+00:20:41.693 INFO  HaplotypeCaller - HTSJDK Version: 2.21.0
+00:20:41.693 INFO  HaplotypeCaller - Picard Version: 2.21.2
+00:20:41.697 INFO  HaplotypeCaller - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:20:41.697 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:20:41.697 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:20:41.697 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:20:41.698 INFO  HaplotypeCaller - Deflater: JdkDeflater
+00:20:41.699 INFO  HaplotypeCaller - Inflater: JdkInflater
+00:20:41.699 INFO  HaplotypeCaller - GCS max retries/reopens: 20
+00:20:41.699 INFO  HaplotypeCaller - Requester pays: disabled
+00:20:41.699 INFO  HaplotypeCaller - Initializing engine
+WARNING	2021-03-13 00:20:41	SamFiles	The index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bai was found by resolving the canonical path of a symlink: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam -> /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bam
+WARNING: BAM index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bai is older than BAM /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam
+00:20:42.474 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz
+00:20:42.676 INFO  IntervalArgumentCollection - Processing 57227415 bp from intervals
+00:20:42.734 INFO  HaplotypeCaller - Done initializing engine
+00:20:42.736 INFO  HaplotypeCallerEngine - Tool is in reference confidence mode and the annotation, the following changes will be made to any specified annotations: 'StrandBiasBySample' will be enabled. 'ChromosomeCounts', 'FisherStrand', 'StrandOddsRatio' and 'QualByDepth' annotations have been disabled
+00:20:42.813 INFO  HaplotypeCallerEngine - Standard Emitting and Calling confidence set to 0.0 for reference-model confidence output
+00:20:42.813 INFO  HaplotypeCallerEngine - All sites annotated with PLs forced to true for reference-model confidence output
+00:20:42.827 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_utils.so
+00:20:42.829 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+00:20:42.883 INFO  IntelPairHmm - Using CPU-supported AVX-512 instructions
+00:20:42.883 INFO  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+00:20:42.884 INFO  IntelPairHmm - Available threads: 1
+00:20:42.884 INFO  IntelPairHmm - Requested threads: 4
+00:20:42.884 WARN  IntelPairHmm - Using 1 available threads, but 4 were requested
+00:20:42.884 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+00:20:42.972 INFO  ProgressMeter - Starting traversal
+00:20:42.973 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+00:20:48.453 WARN  InbreedingCoeff - InbreedingCoeff will not be calculated; at least 10 samples must have called genotypes
+00:20:48.902 WARN  DepthPerSampleHC - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:20:48.902 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:20:48.909 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:20:48.912 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:20:48.915 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:20:52.973 INFO  ProgressMeter -         chrY:5532046              0.2                 18450         110700.0
+00:21:02.975 INFO  ProgressMeter -        chrY:13263891              0.3                 44260         132766.7
+00:21:13.105 INFO  ProgressMeter -        chrY:26436831              0.5                 88170         175567.5
+00:21:23.105 INFO  ProgressMeter -        chrY:40242287              0.7                134190         200622.9
+00:21:33.106 INFO  ProgressMeter -        chrY:54651287              0.8                182220         218083.9
+00:21:35.822 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.828 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.830 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.831 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.833 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.834 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.835 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.836 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.837 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:35.838 WARN  StrandBiasBySample - Annotation will not be calculated, genotype is not called or alleleLikelihoodMap is null
+00:21:37.667 INFO  HaplotypeCaller - 976 read(s) filtered by: ((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  976 read(s) filtered by: (((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND GoodCigarReadFilter)
+      976 read(s) filtered by: ((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+          976 read(s) filtered by: (((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+              976 read(s) filtered by: ((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+                  966 read(s) filtered by: (((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+                      965 read(s) filtered by: ((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter)
+                          965 read(s) filtered by: (MappingQualityReadFilter AND MappingQualityAvailableReadFilter)
+                              965 read(s) filtered by: MappingQualityReadFilter 
+                      1 read(s) filtered by: NotSecondaryAlignmentReadFilter 
+                  10 read(s) filtered by: NotDuplicateReadFilter 
+
+00:21:37.667 INFO  ProgressMeter -        chrY:57225425              0.9                190846         209360.4
+00:21:37.667 INFO  ProgressMeter - Traversal complete. Processed 190846 total regions in 0.9 minutes.
+00:21:37.685 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.002048083
+00:21:37.686 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 0.196171546
+00:21:37.686 INFO  SmithWatermanAligner - Total compute time in java Smith-Waterman : 0.79 sec
+00:21:37.686 INFO  HaplotypeCaller - Shutting down engine
+[March 13, 2021 12:21:37 AM EST] org.broadinstitute.hellbender.tools.walkers.haplotypecaller.HaplotypeCaller done. Elapsed time: 0.94 minutes.
+Runtime.totalMemory()=9999745024
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx24g -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar HaplotypeCaller --reference /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta --input /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam --use-jdk-inflater --use-jdk-deflater --emit-ref-confidence GVCF --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp /fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz --output /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/Sample10_ARK1_S37.test.chrY.g.vcf.gz --intervals chrY --max-alternate-alleles 3
+[Sat Mar 13 00:21:38 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

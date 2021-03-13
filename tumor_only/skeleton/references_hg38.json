@@ -1,7 +1,7 @@
 {
     "input_params": {
       "FASTQ_SOURCE": "",
-      "BAM_SOURCE": "/data/MyPART/mt_tools/tumor_normal_pipeline/test_3/bams",
+      "BAM_SOURCE": "/data/tandonm/pl_test_data/human/bams",
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
       "FFPE_FILTER": "True",
       "CNV_CALLING": "False"
@@ -26,7 +26,7 @@
         "trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
-        "GENOME": "/data/MyPART/mt_tools/tumor_normal_pipeline/test_1/genome/Homo_sapiens_assembly38.fasta",
+        "GENOME": "/data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta",
         "DBSNP": "/fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz",
         "KNOWNANCESTRY": "/data/CCBR_Pipeliner/db/PipeDB/lib/1k_genomes_phase3_autosomes.hg38.vcf.gz",
         "KNOWNINDELS": "-known /fdb/GATK_resource_bundle/hg38bundle/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz -known /data/CCBR_Pipeliner/db/PipeDB/lib/ALL.wgs.1000G_phase3.GRCh38.ncbi_remapper.20150424.shapeit2_indels.vcf.gz",

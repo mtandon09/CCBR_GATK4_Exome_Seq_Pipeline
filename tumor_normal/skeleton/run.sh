@@ -7,6 +7,7 @@ argparse "$@" <<EOF || exit 1
 parser.add_argument('--sourcefq',required=False, default='', help='[input_params] Path to directory containing paired FASTQ files')
 parser.add_argument('--sourcebam',required=False, default='', help='[input_params] Path to directory containing paired BAM files.  If \'--sourcefq\' is also defined, the sample IDs should match the FASTQ files.')
 parser.add_argument('--pairs',required=False, default='', help='[input_params] TSV file containing two columns with tumor and normal sample IDs, one pair per line.  The header needs to be \'Tumor\' for the tumor column and \'Normal\' for the normal column.')
+parser.add_argument('--callers',required=False, default='', help='[input_params] list of mutation callers, comma-separated in single quotes. Default: "\'mutect2\',\'mutect\',\'strelka\',\'vardict\',\'varscan\'"')
 parser.add_argument('--targets',required=False, default='', help='[input_params] Path to exome targets BED file')
 parser.add_argument('--ffpe',required=False, default='', help='[input_params] Add FFPE filtering step (set to one of \'true\', \'t\', or \'yes\' (case-insensitive))')
 parser.add_argument('--cnv',required=False, default='', help='[input_params] Add CNV calling step (set to one of \'true\', \'t\', or \'yes\' (case-insensitive))')
@@ -39,11 +40,12 @@ else
     if [ ! -z $SOURCEFQ ]; then SOURCEFQ="'FASTQ_SOURCE':'$SOURCEFQ'"; fi
     if [ ! -z $SOURCEBAM ]; then SOURCEBAM="'BAM_SOURCE':'$SOURCEBAM'"; fi
     if [ ! -z $PAIRS ]; then PAIRS="'PAIRS_FILE':'$PAIRS'"; fi
+    if [ ! -z $CALLERS ]; then CALLERS="'VARIANT_CALLERS':[$CALLERS]"; fi
     if [ ! -z $TARGETS ]; then TARGETS="'EXOME_TARGETS':'$TARGETS'"; fi
     if [ ! -z $FFPE ]; then FFPE="'FFPE_FILTER':'$FFPE'"; fi
     if [ ! -z $CNV ]; then CNV="'CNV_CALLING':'$CNV'"; fi
     if [ ! -z $OUTDIR ]; then CNV="'BASE_OUTDIR':'$OUTDIR'"; fi
-    inputparams=($SOURCEFQ $SOURCEBAM $PAIRS $TARGETS $FFPE $CNV)
+    inputparams=($SOURCEFQ $SOURCEBAM $PAIRS $CALLERS $TARGETS $FFPE $CNV)
     for i in ${inputparams[@]}; do configarg="$configarg,$i"; done
     if [ ! -z $configarg ]; then configarg="--config \"input_params={$(echo -e $configarg | sed -e 's/^,//')}\""; fi
 fi
@@ -52,7 +54,7 @@ if [ ! -z $RULEGRAPH ]; then
     module load snakemake/5.24.1
     module load graphviz
     mycmd="snakemake --snakefile $SNAKEFILE --rerun-incomplete --rulegraph $configarg | dot -Tpng > $RULEGRAPH"
-    echo $mycmd
+    #echo $mycmd
     eval $mycmd
     echo "Wrote rule graph to $RULEGRAPH. Exiting..."
     exit 0
@@ -71,7 +73,7 @@ smk_cmd_base="module load snakemake/5.24.1; snakemake --stats snakemake.stats --
 
 NJOBS="500"
 if [ ! -z $DRYRUN ]; then
-    echo "$smk_cmd_base -npr -j $NJOBS"
+    #echo "$smk_cmd_base -npr -j $NJOBS"
     eval "$smk_cmd_base -npr -j $NJOBS"
 else
     if [ ! -z $LOCAL ]; then

@@ -1,0 +1,149 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	pileup_normal
+	1
+
+[Sat Mar 13 00:18:59 2021]
+rule pileup_normal:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample4_CRL1622_S31.test.recal.bam
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/pileup_summaries/Sample11_ACI_158_S38.test_normal.pileup.table
+    jobid: 0
+    wildcards: samples=Sample11_ACI_158_S38.test
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn4504 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn4504 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:19:03.350 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+Mar 13, 2021 12:19:03 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:19:03.595 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:19:03.596 INFO  GetPileupSummaries - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:19:03.596 INFO  GetPileupSummaries - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:19:03.596 INFO  GetPileupSummaries - Executing as tandonm@cn4504 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:19:03.596 INFO  GetPileupSummaries - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:19:03.596 INFO  GetPileupSummaries - Start Date/Time: March 13, 2021 12:19:03 AM EST
+00:19:03.596 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:19:03.596 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:19:03.597 INFO  GetPileupSummaries - HTSJDK Version: 2.21.0
+00:19:03.597 INFO  GetPileupSummaries - Picard Version: 2.21.2
+00:19:03.597 INFO  GetPileupSummaries - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:19:03.597 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:19:03.597 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:19:03.597 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:19:03.597 INFO  GetPileupSummaries - Deflater: IntelDeflater
+00:19:03.598 INFO  GetPileupSummaries - Inflater: IntelInflater
+00:19:03.598 INFO  GetPileupSummaries - GCS max retries/reopens: 20
+00:19:03.598 INFO  GetPileupSummaries - Requester pays: disabled
+00:19:03.598 INFO  GetPileupSummaries - Initializing engine
+WARNING	2021-03-13 00:19:03	SamFiles	The index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample4_CRL1622_S31.test.recal.bai was found by resolving the canonical path of a symlink: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample4_CRL1622_S31.test.recal.bam -> /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample4_CRL1622_S31.test.recal.bam
+WARNING: BAM index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample4_CRL1622_S31.test.recal.bai is older than BAM /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample4_CRL1622_S31.test.recal.bam
+00:19:04.046 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+00:19:04.271 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+00:23:05.316 INFO  IntervalArgumentCollection - Processing 28565336 bp from intervals
+00:23:06.138 INFO  GetPileupSummaries - Done initializing engine
+00:23:06.139 INFO  ProgressMeter - Starting traversal
+00:23:06.139 INFO  ProgressMeter -        Current Locus  Elapsed Minutes        Loci Processed      Loci/Minute
+00:24:42.095 INFO  ProgressMeter -         chr1:1314612              1.6                  1000            625.3
+00:24:52.130 INFO  ProgressMeter -        chr1:24401154              1.8                 30000          16982.6
+00:25:02.204 INFO  ProgressMeter -        chr1:58506268              1.9                 66000          34119.1
+00:25:12.219 INFO  ProgressMeter -       chr1:117077762              2.1                102000          48541.0
+00:25:22.405 INFO  ProgressMeter -       chr1:179377130              2.3                140000          61644.1
+00:25:32.505 INFO  ProgressMeter -       chr1:223270639              2.4                177000          72557.8
+00:25:42.964 INFO  ProgressMeter -        chr2:22561846              2.6                216000          82639.9
+00:25:53.191 INFO  ProgressMeter -        chr2:61420766              2.8                249000          89433.8
+00:26:03.381 INFO  ProgressMeter -       chr2:126532078              3.0                287000          97155.3
+00:26:13.736 INFO  ProgressMeter -       chr2:179445877              3.1                320000         102347.1
+00:26:23.773 INFO  ProgressMeter -       chr2:236544158              3.3                360000         109292.9
+00:26:33.780 INFO  ProgressMeter -        chr3:54420374              3.5                402000         116162.0
+00:26:43.963 INFO  ProgressMeter -       chr3:124970559              3.6                437000         120372.4
+00:26:54.192 INFO  ProgressMeter -       chr3:180072730              3.8                476000         125234.0
+00:27:04.249 INFO  ProgressMeter -        chr4:15816278              4.0                510000         128512.0
+00:27:14.590 INFO  ProgressMeter -        chr4:98278950              4.1                551000         133065.0
+00:27:24.778 INFO  ProgressMeter -         chr5:4531495              4.3                589000         136638.3
+00:27:34.804 INFO  ProgressMeter -        chr5:98576545              4.5                630000         140696.2
+00:27:45.083 INFO  ProgressMeter -       chr5:168666517              4.6                669000         143899.9
+00:27:55.249 INFO  ProgressMeter -        chr6:38852768              4.8                707000         146726.2
+00:28:05.330 INFO  ProgressMeter -       chr6:109265131              5.0                743000         149001.8
+00:28:15.402 INFO  ProgressMeter -       chr6:163705472              5.2                779000         151133.5
+00:28:25.608 INFO  ProgressMeter -        chr7:47302349              5.3                819000         153818.2
+00:28:35.679 INFO  ProgressMeter -       chr7:105873919              5.5                860000         156581.9
+00:28:45.886 INFO  ProgressMeter -       chr7:156858952              5.7                900000         158941.8
+00:28:55.953 INFO  ProgressMeter -        chr8:39645558              5.8                935000         160370.9
+00:29:06.154 INFO  ProgressMeter -       chr8:109381753              6.0                973000         162159.9
+00:29:16.400 INFO  ProgressMeter -         chr9:7991750              6.2               1008000         163344.2
+00:29:26.568 INFO  ProgressMeter -        chr9:83510525              6.3               1043000         164498.5
+00:29:36.687 INFO  ProgressMeter -       chr9:136336128              6.5               1086000         166842.5
+00:29:46.743 INFO  ProgressMeter -       chr10:36651811              6.7               1127000         168795.1
+00:29:56.856 INFO  ProgressMeter -       chr10:80058963              6.8               1165000         170190.2
+00:30:07.000 INFO  ProgressMeter -        chr11:1251563              7.0               1201000         171220.4
+00:30:17.068 INFO  ProgressMeter -       chr11:63166271              7.2               1240000         172650.7
+00:30:27.213 INFO  ProgressMeter -      chr11:111808047              7.4               1276000         173576.3
+00:30:37.229 INFO  ProgressMeter -       chr12:27770894              7.5               1316000         175042.7
+00:30:47.241 INFO  ProgressMeter -       chr12:79184250              7.7               1356000         176447.2
+00:30:57.477 INFO  ProgressMeter -       chr13:21140781              7.9               1397000         177834.2
+00:31:07.480 INFO  ProgressMeter -      chr13:113418879              8.0               1436000         178999.9
+00:31:17.734 INFO  ProgressMeter -       chr14:65248264              8.2               1471000         179538.0
+00:31:27.876 INFO  ProgressMeter -       chr15:34963256              8.4               1509000         180453.1
+00:31:38.036 INFO  ProgressMeter -       chr15:85127111              8.5               1548000         181443.1
+00:31:48.148 INFO  ProgressMeter -       chr16:24377895              8.7               1590000         182755.5
+00:31:58.174 INFO  ProgressMeter -       chr16:82974004              8.9               1631000         183935.3
+00:32:08.302 INFO  ProgressMeter -       chr17:21110152              9.0               1670000         184815.3
+00:32:18.485 INFO  ProgressMeter -       chr17:63790354              9.2               1707000         185427.3
+00:32:28.526 INFO  ProgressMeter -       chr18:14147978              9.4               1746000         186277.4
+00:32:38.622 INFO  ProgressMeter -        chr19:6430126              9.5               1783000         186870.2
+00:32:48.935 INFO  ProgressMeter -       chr19:38009025              9.7               1825000         187887.7
+00:32:59.014 INFO  ProgressMeter -        chr20:1305033              9.9               1866000         188842.5
+00:33:09.083 INFO  ProgressMeter -       chr20:63288272             10.0               1909000         189967.9
+00:33:19.087 INFO  ProgressMeter -       chr22:30772879             10.2               1948000         190685.3
+00:33:29.117 INFO  ProgressMeter -        chrX:45073263             10.4               1984000         191082.2
+00:33:34.997 INFO  GetPileupSummaries - 633930 read(s) filtered by: (((((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  633930 read(s) filtered by: ((((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter) AND GoodCigarReadFilter)
+      633930 read(s) filtered by: (((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter)
+          618070 read(s) filtered by: ((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+              618070 read(s) filtered by: (((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+                  618070 read(s) filtered by: ((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter)
+                      148395 read(s) filtered by: (((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter)
+                          145418 read(s) filtered by: ((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter)
+                              145418 read(s) filtered by: (MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter)
+                                  145418 read(s) filtered by: MappingQualityNotZeroReadFilter 
+                          2977 read(s) filtered by: PrimaryLineReadFilter 
+                      469675 read(s) filtered by: NotDuplicateReadFilter 
+          15860 read(s) filtered by: MateOnSameContigOrNoMappedMateReadFilter 
+
+00:33:34.997 INFO  ProgressMeter -       chrX:153905631             10.5               2007997         191585.1
+00:33:34.998 INFO  ProgressMeter - Traversal complete. Processed 2007997 total loci in 10.5 minutes.
+00:33:35.919 INFO  GetPileupSummaries - Shutting down engine
+[March 13, 2021 12:33:35 AM EST] org.broadinstitute.hellbender.tools.walkers.contamination.GetPileupSummaries done. Elapsed time: 14.54 minutes.
+Runtime.totalMemory()=26308247552
+Tool returned:
+SUCCESS
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx48g -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar GetPileupSummaries -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample4_CRL1622_S31.test.recal.bam -V /fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz -L /fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/pileup_summaries/Sample11_ACI_158_S38.test_normal.pileup.table
+[Sat Mar 13 00:33:38 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

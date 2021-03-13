@@ -1,0 +1,88 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 16
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	varscan
+	1
+
+[Sat Mar 13 00:33:58 2021]
+rule varscan:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample4_CRL1622_S31.test.chr22.split.bam, /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/chrom_split/Sample10_ARK1_S37.test.chr22.split.bam, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/qc/gatk_contamination/Sample10_ARK1_S37.test.tumor.contamination.table, /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/qc/gatk_contamination/Sample10_ARK1_S37.test.normal.contamination.table
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf
+    jobid: 0
+    wildcards: samples=Sample10_ARK1_S37.test, chroms=chr22
+
+[+] Loading samtools 1.8  ... 
+[+] Loading VarScan 2.4.3  ... 
+[mpileup] 2 samples in 2 input files
+Min coverage:	8x for Normal, 6x for Tumor
+Min reads2:	2
+Min strands2:	1
+Min var freq:	0.01
+Min freq for hom:	0.75
+Normal purity:	0.9986813291843144
+Tumor purity:	0.0405581262348379
+Min avg qual:	30
+P-value thresh:	0.99
+Somatic p-value:	0.05
+Reading input from /dev/fd/63
+Reading mpileup input...
+5437055 positions in mpileup file
+854621 had sufficient coverage for comparison
+853685 were called Reference
+0 were mixed SNP-indel calls and filtered
+0 were removed by the strand filter
+298 were called Germline
+15 were called LOH
+397 were called Somatic
+226 were called Unknown
+0 were called Variant
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn2298 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn2298 
+[+] Loading R 3.6.3 
+[+] Loading GATK  3.8-1 
+directory for temp files: /lscratch/10304596
+Executing ' java -Djava.io.tmpdir=/lscratch/10304596 -Xmx12G -XX:ParallelGCThreads=13 -jar /usr/local/apps/GATK/3.8-1/GenomeAnalysisTK.jar -T CombineVariants -R /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta --variant /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.snp --variant /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.indel --assumeIdenticalSamples --filteredrecordsmergetype KEEP_UNCONDITIONAL -o /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf --use_jdk_inflater --use_jdk_deflater '
+INFO  00:34:46,641 HelpFormatter - ------------------------------------------------------------------------------------ 
+INFO  00:34:46,644 HelpFormatter - The Genome Analysis Toolkit (GATK) v3.8-1-0-gf15c1c3ef, Compiled 2018/02/19 05:43:50 
+INFO  00:34:46,644 HelpFormatter - Copyright (c) 2010-2016 The Broad Institute 
+INFO  00:34:46,644 HelpFormatter - For support and documentation go to https://software.broadinstitute.org/gatk 
+INFO  00:34:46,644 HelpFormatter - [Sat Mar 13 00:34:46 EST 2021] Executing on Linux 3.10.0-862.14.4.el7.x86_64 amd64 
+INFO  00:34:46,644 HelpFormatter - OpenJDK 64-Bit Server VM 1.8.0_181-b13 
+INFO  00:34:46,648 HelpFormatter - Program Args: -T CombineVariants -R /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta --variant /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.snp --variant /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.indel --assumeIdenticalSamples --filteredrecordsmergetype KEEP_UNCONDITIONAL -o /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf --use_jdk_inflater --use_jdk_deflater 
+INFO  00:34:46,652 HelpFormatter - Executing as tandonm@cn2298 on Linux 3.10.0-862.14.4.el7.x86_64 amd64; OpenJDK 64-Bit Server VM 1.8.0_181-b13. 
+INFO  00:34:46,653 HelpFormatter - Date/Time: 2021/03/13 00:34:46 
+INFO  00:34:46,653 HelpFormatter - ------------------------------------------------------------------------------------ 
+INFO  00:34:46,653 HelpFormatter - ------------------------------------------------------------------------------------ 
+INFO  00:34:46,684 GenomeAnalysisEngine - Deflater: JdkDeflater 
+INFO  00:34:46,684 GenomeAnalysisEngine - Inflater: JdkInflater 
+INFO  00:34:46,685 GenomeAnalysisEngine - Strictness is SILENT 
+INFO  00:34:48,425 GenomeAnalysisEngine - Downsampling Settings: Method: BY_SAMPLE, Target Coverage: 1000 
+INFO  00:34:48,597 RMDTrackBuilder - Writing Tribble index to disk for file /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.snp.idx 
+INFO  00:34:48,791 RMDTrackBuilder - Writing Tribble index to disk for file /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/chrom_split/Sample10_ARK1_S37.test.chr22.vcf.indel.idx 
+INFO  00:34:50,255 GenomeAnalysisEngine - Preparing for traversal 
+INFO  00:34:50,260 GenomeAnalysisEngine - Done preparing for traversal 
+INFO  00:34:50,261 ProgressMeter - [INITIALIZATION COMPLETE; STARTING PROCESSING] 
+INFO  00:34:50,261 ProgressMeter -                 | processed |    time |    per 1M |           |   total | remaining 
+INFO  00:34:50,261 ProgressMeter -        Location |     sites | elapsed |     sites | completed | runtime |   runtime 
+INFO  00:34:50,815 ProgressMeter -            done       957.0     0.0 s       9.6 m       89.3%     0.0 s       0.0 s 
+INFO  00:34:50,816 ProgressMeter - Total runtime 0.55 secs, 0.01 min, 0.00 hours 
+------------------------------------------------------------------------------------------
+Done. There were no warn messages.
+------------------------------------------------------------------------------------------
+GATK finished (exit code 0)
+[Sat Mar 13 00:34:51 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

@@ -1,0 +1,87 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 2
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	genotype
+	1
+
+[Sat Mar 13 00:29:03 2021]
+rule genotype:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/merged.chr5.g.vcf.gz, /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/merged.chr5.g.vcf.gz.tbi
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/VCF/by_chrom/raw_variants.chr5.vcf.gz
+    jobid: 0
+    wildcards: chroms=chr5
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn2336 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn2336 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:29:09.536 WARN  GATKAnnotationPluginDescriptor - Redundant enabled annotation group (StandardAnnotation) is enabled for this tool by default
+Mar 13, 2021 12:29:09 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:29:09.840 INFO  GenotypeGVCFs - ------------------------------------------------------------
+00:29:09.841 INFO  GenotypeGVCFs - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:29:09.841 INFO  GenotypeGVCFs - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:29:09.841 INFO  GenotypeGVCFs - Executing as tandonm@cn2336 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:29:09.841 INFO  GenotypeGVCFs - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:29:09.841 INFO  GenotypeGVCFs - Start Date/Time: March 13, 2021 12:29:09 AM EST
+00:29:09.841 INFO  GenotypeGVCFs - ------------------------------------------------------------
+00:29:09.841 INFO  GenotypeGVCFs - ------------------------------------------------------------
+00:29:09.842 INFO  GenotypeGVCFs - HTSJDK Version: 2.21.0
+00:29:09.842 INFO  GenotypeGVCFs - Picard Version: 2.21.2
+00:29:09.847 INFO  GenotypeGVCFs - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:29:09.847 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:29:09.848 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:29:09.848 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:29:09.849 INFO  GenotypeGVCFs - Deflater: JdkDeflater
+00:29:09.850 INFO  GenotypeGVCFs - Inflater: JdkInflater
+00:29:09.850 INFO  GenotypeGVCFs - GCS max retries/reopens: 20
+00:29:09.850 INFO  GenotypeGVCFs - Requester pays: disabled
+00:29:09.850 INFO  GenotypeGVCFs - Initializing engine
+00:29:10.517 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz
+00:29:10.841 INFO  FeatureManager - Using codec VCFCodec to read file file:///spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/merged.chr5.g.vcf.gz
+00:29:11.077 INFO  IntervalArgumentCollection - Processing 181538259 bp from intervals
+00:29:11.164 INFO  GenotypeGVCFs - Done initializing engine
+00:29:11.398 INFO  ProgressMeter - Starting traversal
+00:29:11.398 INFO  ProgressMeter -        Current Locus  Elapsed Minutes    Variants Processed  Variants/Minute
+00:29:11.566 WARN  InbreedingCoeff - InbreedingCoeff will not be calculated; at least 10 samples must have called genotypes
+00:29:21.583 INFO  ProgressMeter -         chr5:9593561              0.2                 80000         471327.6
+00:29:31.784 INFO  ProgressMeter -        chr5:25835549              0.3                181000         532718.5
+00:29:41.823 INFO  ProgressMeter -        chr5:44112331              0.5                366000         721798.6
+00:29:51.846 INFO  ProgressMeter -        chr5:73882531              0.7                554000         821795.9
+00:30:01.877 INFO  ProgressMeter -        chr5:96135950              0.8                748000         889082.6
+00:30:11.907 INFO  ProgressMeter -       chr5:127398828              1.0                958000         949957.0
+00:30:21.909 INFO  ProgressMeter -       chr5:149835564              1.2               1303000        1108778.9
+00:30:31.922 INFO  ProgressMeter -       chr5:176238837              1.3               1590000        1184740.0
+00:30:35.891 INFO  ProgressMeter -       chr5:181264577              1.4               1734917        1231995.8
+00:30:35.891 INFO  ProgressMeter - Traversal complete. Processed 1734917 total variants in 1.4 minutes.
+00:30:35.922 INFO  GenotypeGVCFs - Shutting down engine
+[March 13, 2021 12:30:35 AM EST] org.broadinstitute.hellbender.tools.walkers.GenotypeGVCFs done. Elapsed time: 1.44 minutes.
+Runtime.totalMemory()=8581545984
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx96g -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar GenotypeGVCFs --reference /data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta --use-jdk-inflater --use-jdk-deflater --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp /fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz --output /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/VCF/by_chrom/raw_variants.chr5.vcf.gz --variant /spin1/scratch/tandonm/pipeline_out/tn_test_1/germline/gVCFs/merged.chr5.g.vcf.gz --intervals chr5
+[Sat Mar 13 00:30:36 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}

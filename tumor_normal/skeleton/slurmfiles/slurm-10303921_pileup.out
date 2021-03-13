@@ -1,0 +1,144 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 4
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	pileup_tumor
+	1
+
+[Sat Mar 13 00:18:40 2021]
+rule pileup_tumor:
+    input: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam
+    output: /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/pileup_summaries/Sample10_ARK1_S37.test_tumor.pileup.table
+    jobid: 0
+    wildcards: samples=Sample10_ARK1_S37.test
+
+[+] Loading gcc  9.2.0  ... 
+[+] Loading GSL 2.6 for GCC 9.2.0 ... 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading openmpi 3.1.4  for GCC 9.2.0 
+[+] Loading ImageMagick  7.0.8  on cn2291 
+[+] Loading HDF5  1.10.4 
+[-] Unloading gcc  9.2.0  ... 
+[+] Loading gcc  9.2.0  ... 
+[+] Loading NetCDF 4.7.4_gcc9.2.0 
+[+] Loading pandoc  2.11.4  on cn2291 
+[+] Loading R 3.6.3 
+[+] Loading GATK  4.1.4.1 
+
+GATK/4 includes its own python environment. Loading a different python
+environment
+after the GATK module will result in some tools failing. Conversely, the python
+environment included with GATK/4 will override any python modules you may
+already
+have loaded.
+
+
+00:18:44.288 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+Mar 13, 2021 12:18:44 AM shaded.cloud_nio.com.google.auth.oauth2.ComputeEngineCredentials runningOnComputeEngine
+INFO: Failed to detect whether we are running on Google Compute Engine.
+00:18:44.521 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:18:44.521 INFO  GetPileupSummaries - The Genome Analysis Toolkit (GATK) v4.1.4.1
+00:18:44.521 INFO  GetPileupSummaries - For support and documentation go to https://software.broadinstitute.org/gatk/
+00:18:44.521 INFO  GetPileupSummaries - Executing as tandonm@cn2291 on Linux v3.10.0-862.14.4.el7.x86_64 amd64
+00:18:44.522 INFO  GetPileupSummaries - Java runtime: OpenJDK 64-Bit Server VM v1.8.0_181-b13
+00:18:44.522 INFO  GetPileupSummaries - Start Date/Time: March 13, 2021 12:18:44 AM EST
+00:18:44.522 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:18:44.522 INFO  GetPileupSummaries - ------------------------------------------------------------
+00:18:44.522 INFO  GetPileupSummaries - HTSJDK Version: 2.21.0
+00:18:44.523 INFO  GetPileupSummaries - Picard Version: 2.21.2
+00:18:44.523 INFO  GetPileupSummaries - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+00:18:44.523 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+00:18:44.523 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+00:18:44.523 INFO  GetPileupSummaries - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+00:18:44.523 INFO  GetPileupSummaries - Deflater: IntelDeflater
+00:18:44.523 INFO  GetPileupSummaries - Inflater: IntelInflater
+00:18:44.523 INFO  GetPileupSummaries - GCS max retries/reopens: 20
+00:18:44.523 INFO  GetPileupSummaries - Requester pays: disabled
+00:18:44.523 INFO  GetPileupSummaries - Initializing engine
+WARNING	2021-03-13 00:18:44	SamFiles	The index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bai was found by resolving the canonical path of a symlink: /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam -> /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bam
+WARNING: BAM index file /gpfs/gsfs7/users/tandonm/pl_test_data/human/bams/Sample10_ARK1_S37.test.recal.bai is older than BAM /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam
+00:18:45.010 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+00:18:45.231 INFO  FeatureManager - Using codec VCFCodec to read file file:///fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+00:22:14.680 INFO  IntervalArgumentCollection - Processing 28565336 bp from intervals
+00:22:15.409 INFO  GetPileupSummaries - Done initializing engine
+00:22:15.410 INFO  ProgressMeter - Starting traversal
+00:22:15.410 INFO  ProgressMeter -        Current Locus  Elapsed Minutes        Loci Processed      Loci/Minute
+00:23:57.956 INFO  ProgressMeter -         chr1:1405805              1.7                  1000            585.1
+00:24:07.956 INFO  ProgressMeter -        chr1:30853557              1.9                 33000          17592.8
+00:24:17.990 INFO  ProgressMeter -        chr1:88864261              2.0                 73000          35732.1
+00:24:28.061 INFO  ProgressMeter -       chr1:163009494              2.2                111000          50206.9
+00:24:38.086 INFO  ProgressMeter -       chr1:215343113              2.4                150000          63080.0
+00:24:48.354 INFO  ProgressMeter -        chr2:22332463              2.5                189000          74145.3
+00:24:58.532 INFO  ProgressMeter -        chr2:85401043              2.7                231000          84967.1
+00:25:08.649 INFO  ProgressMeter -       chr2:169175632              2.9                271000          93858.8
+00:25:18.731 INFO  ProgressMeter -       chr2:223878828              3.1                305000          99824.9
+00:25:29.030 INFO  ProgressMeter -        chr3:41238343              3.2                347000         107530.2
+00:25:39.091 INFO  ProgressMeter -       chr3:120690679              3.4                387000         114001.8
+00:25:49.183 INFO  ProgressMeter -       chr3:180853003              3.6                427000         119846.8
+00:25:59.422 INFO  ProgressMeter -        chr4:37846986              3.7                469000         125618.8
+00:26:09.524 INFO  ProgressMeter -       chr4:139742467              3.9                511000         130961.8
+00:26:19.749 INFO  ProgressMeter -        chr5:34786669              4.1                548000         134567.1
+00:26:30.004 INFO  ProgressMeter -       chr5:106543514              4.2                586000         138102.8
+00:26:40.060 INFO  ProgressMeter -       chr5:158595716              4.4                625000         141696.6
+00:26:50.126 INFO  ProgressMeter -        chr6:26103928              4.6                665000         145240.9
+00:27:00.350 INFO  ProgressMeter -       chr6:119637291              4.7                707000         148873.4
+00:27:10.360 INFO  ProgressMeter -        chr7:33505379              4.9                750000         152568.2
+00:27:20.596 INFO  ProgressMeter -       chr7:101541885              5.1                788000         154921.9
+00:27:30.853 INFO  ProgressMeter -         chr8:6263903              5.3                826000         157112.9
+00:27:41.044 INFO  ProgressMeter -        chr8:72017294              5.4                867000         159750.4
+00:27:51.126 INFO  ProgressMeter -       chr8:133834120              5.6                906000         161922.6
+00:28:01.322 INFO  ProgressMeter -        chr9:77276145              5.8                945000         163914.5
+00:28:11.366 INFO  ProgressMeter -       chr9:132935185              5.9                986000         166200.3
+00:28:21.410 INFO  ProgressMeter -       chr10:29954736              6.1               1021000         167377.0
+00:28:31.517 INFO  ProgressMeter -       chr10:91461261              6.3               1061000         169260.3
+00:28:41.558 INFO  ProgressMeter -        chr11:2408790              6.4               1099000         170763.5
+00:28:51.764 INFO  ProgressMeter -       chr11:61377574              6.6               1139000         172421.6
+00:29:01.777 INFO  ProgressMeter -      chr11:108066249              6.8               1177000         173783.8
+00:29:11.926 INFO  ProgressMeter -       chr12:21512074              6.9               1218000         175455.4
+00:29:22.301 INFO  ProgressMeter -       chr12:57625247              7.1               1252000         175970.0
+00:29:32.383 INFO  ProgressMeter -      chr12:119688091              7.3               1289000         176990.3
+00:29:42.555 INFO  ProgressMeter -       chr13:94973111              7.5               1330000         178466.0
+00:29:52.566 INFO  ProgressMeter -       chr14:75138073              7.6               1372000         180069.8
+00:30:02.693 INFO  ProgressMeter -       chr15:60149301              7.8               1414000         181560.2
+00:30:12.829 INFO  ProgressMeter -        chr16:4564054              8.0               1456000         182984.3
+00:30:23.045 INFO  ProgressMeter -       chr16:68813673              8.1               1497000         184195.1
+00:30:33.225 INFO  ProgressMeter -        chr17:7626584              8.3               1532000         184647.3
+00:30:43.301 INFO  ProgressMeter -       chr17:51238859              8.5               1571000         185591.0
+00:30:53.514 INFO  ProgressMeter -        chr18:7528287              8.6               1613000         186796.5
+00:31:03.648 INFO  ProgressMeter -        chr19:4464483              8.8               1654000         187870.2
+00:31:13.836 INFO  ProgressMeter -       chr19:38022572              9.0               1697000         189106.8
+00:31:24.008 INFO  ProgressMeter -        chr20:5717443              9.1               1739000         190193.9
+00:31:34.121 INFO  ProgressMeter -       chr20:48659843              9.3               1773000         190402.6
+00:31:44.125 INFO  ProgressMeter -       chr22:19210507              9.5               1812000         191168.1
+00:31:54.273 INFO  ProgressMeter -        chrX:34837705              9.6               1855000         192273.8
+00:32:04.238 INFO  GetPileupSummaries - 594715 read(s) filtered by: (((((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  594715 read(s) filtered by: ((((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter) AND GoodCigarReadFilter)
+      594715 read(s) filtered by: (((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND MateOnSameContigOrNoMappedMateReadFilter)
+          579326 read(s) filtered by: ((((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+              579326 read(s) filtered by: (((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+                  579326 read(s) filtered by: ((((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter) AND NotDuplicateReadFilter)
+                      142534 read(s) filtered by: (((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND PrimaryLineReadFilter)
+                          139549 read(s) filtered by: ((MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter) AND MappedReadFilter)
+                              139549 read(s) filtered by: (MappingQualityAvailableReadFilter AND MappingQualityNotZeroReadFilter)
+                                  139549 read(s) filtered by: MappingQualityNotZeroReadFilter 
+                          2985 read(s) filtered by: PrimaryLineReadFilter 
+                      436792 read(s) filtered by: NotDuplicateReadFilter 
+          15389 read(s) filtered by: MateOnSameContigOrNoMappedMateReadFilter 
+
+00:32:04.239 INFO  ProgressMeter - chr7_KI270803v1_alt:457697              9.8               1892076         192797.5
+00:32:04.239 INFO  ProgressMeter - Traversal complete. Processed 1892076 total loci in 9.8 minutes.
+00:32:05.092 INFO  GetPileupSummaries - Shutting down engine
+[March 13, 2021 12:32:05 AM EST] org.broadinstitute.hellbender.tools.walkers.contamination.GetPileupSummaries done. Elapsed time: 13.35 minutes.
+Runtime.totalMemory()=28276424704
+Tool returned:
+SUCCESS
+Using GATK jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx48g -jar /usr/local/apps/GATK/4.1.4.1/gatk-package-4.1.4.1-local.jar GetPileupSummaries -I /spin1/scratch/tandonm/pipeline_out/tn_test_1/bams/Sample10_ARK1_S37.test.recal.bam -V /fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz -L /fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz -O /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/pileup_summaries/Sample10_ARK1_S37.test_tumor.pileup.table
+[Sat Mar 13 00:32:06 2021]
+Finished job 0.
+1 of 1 steps (100%) done
+{'Sample10_ARK1_S37.test': '--variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample10_ARK1_S37.test.FINAL.vcf', 'Sample11_ACI_158_S38.test': '--variant:mutect2 /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect2_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:varscan /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/varscan_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:mutect /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/mutect_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:vardict /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/vardict_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf --variant:strelka /spin1/scratch/tandonm/pipeline_out/tn_test_1/somatic/SNP_Indels/strelka_out/vcf/Sample11_ACI_158_S38.test.FINAL.vcf'}
