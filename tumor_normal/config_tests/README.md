@@ -71,9 +71,15 @@ At a minimum, these arguments must be provided
 - At least one of `--sourcefq` or `--sourcebam`
 
 
-FASTQs for testing can be found here: `/data/tandonm/pl_test_data/human/fastq`
-BAMs for testing can be found here: `/data/tandonm/pl_test_data/human/bams`
+---------------------------------------------------
+## Set up
+Files for testing can be found here: 
+| File Type  | Location |
+| -----------| ----------- |
+| FASTQ      |`/data/tandonm/pl_test_data/human/fastq`|
+| BAM        |`/data/tandonm/pl_test_data/human/bams`|
 
+So let's set up some variables with file paths
 ```
 pipeline_dir="../skeleton/"
 test_data_fq="/data/tandonm/pl_test_data/human/fastq"
