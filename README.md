@@ -1,6 +1,7 @@
 # hg38 pipeline
 -------------------------------------------------
-Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.
+~~Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.~~
+Both `tumor_only` and `tumor_normal` are functional.  It got too complicated to merge them together, so they are separate for now.
 
 ### Deploying
 So far, I've usually been creating a copy of the skeleton for each run. Then I either edit the config json (`references_hg38.json` *prob wanna change this filename* lol) and call snakemake manually. Or increasingly, I've built up the `run.sh` script to handle most of the things I needed during development.  Theoretically by setting the input/output options correctly, a common skeleton can be used for any number of jobs but I have not tested it thoroughly.
