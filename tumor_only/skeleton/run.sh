@@ -22,8 +22,8 @@ parser.add_argument('--report',required=False, default='', help='Path to an HTML
 parser.add_argument('--config',required=False, default='', help='Manually set the \'input_params\' section of the snakemake config file. Overrides any [input_params] arguments.')
 EOF
 
-#SNAKEFILE="tumor_only_hg38.snakemake"
-SNAKEFILE="tumor_normal_hg38.snakemake"
+SNAKEFILE="tumor_only_hg38.snakemake"
+#SNAKEFILE="tumor_normal_hg38.snakemake"
 
 
 untilarg=""
@@ -92,8 +92,8 @@ else
         echo "module load snakemake/5.24.1; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg"
         eval "module load snakemake/5.24.1; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg"
     else
-        echo -e "#!/usr/bin/bash\n$smk_cmd_base -j $NJOBS --restart-times 1 --latency-wait 120 \n > snakemake.log 2>&1" > tumor_normal_pipeline.sh
+        echo -e "#!/usr/bin/bash\n$smk_cmd_base -j $NJOBS --restart-times 1 --latency-wait 120 \n > snakemake.log 2>&1" > tumor_only_pipeline.sh
         echo "Submitting pipeline to cluster... "
-        sbatch --cpus-per-task=2 --mem=12g --time 5-00:00:00 --partition ccr,norm --output submit.log --error submit.log tumor_normal_pipeline.sh
+        sbatch --cpus-per-task=2 --mem=12g --time 5-00:00:00 --partition ccr,norm --output submit.log --error submit.log tumor_only_pipeline.sh
     fi
 fi
