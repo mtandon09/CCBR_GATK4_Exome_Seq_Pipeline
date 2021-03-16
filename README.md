@@ -1,6 +1,7 @@
 # hg38 pipeline
 -------------------------------------------------
 ~~Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.~~
+
 Both `tumor_only` and `tumor_normal` are functional.  It got too complicated to merge them together, so they are separate for now.
 
 ### Deploying
@@ -39,7 +40,8 @@ usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM]
               [--pairs PAIRS] [--callers CALLERS] [--targets TARGETS]
               [--ffpe FFPE] [--cnv CNV] [--outdir OUTDIR] [--dryrun DRYRUN]
               [--unlock UNLOCK] [--until UNTIL] [--local LOCAL]
-              [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--config CONFIG]
+              [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--report REPORT]
+              [--config CONFIG]
 
 Run muh pipelinezz
 
@@ -75,6 +77,8 @@ optional arguments:
   --rulegraph RULEGRAPH
                         Path to a PNG file to which the rules DAG will be
                         written
+  --report REPORT       Path to an HTML file to which the snakemake report
+                        will be written
   --config CONFIG       Manually set the 'input_params' section of the
                         snakemake config file. Overrides any [input_params]
                         arguments.
