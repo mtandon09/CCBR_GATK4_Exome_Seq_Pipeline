@@ -48,7 +48,7 @@
         "PON": "/data/CCBR_Pipeliner/db/PipeDB/lib/hg38.noCOSMIC_ClinVar.pon.vcf.gz",
         "COSMIC": "/data/CCBR_Pipeliner/db/PipeDB/lib/COSMIC_82_hg38.vcf.gz",
         "CONTAMINATION": "/fdb/GATK_resource_bundle/hg38bundle/ExomeContam.hg38.vcf.gz",
-        "GNOMAD": "/data/MA_shared/justin_wes_pipe/somatic-hg38-af-only-gnomad.hg38.vcf.gz",
+        "GNOMAD": "/data/tandonm/pl_test_data/human/other/somatic-hg38-af-only-gnomad.hg38.vcf.gz",
         "FREECLENGTHS": "/data/CCBR_Pipeliner/db/PipeDB/lib/hg38.filtered.fa.fai",
         "FREECCHROMS": "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/Chromosomes",
         "FREECPILEUP": "/data/CCBR_Pipeliner/db/PipeDB/lib/dbsnp_146.hg38.SingleDiNucl.IDs.vcf",
@@ -58,9 +58,16 @@
         "ADMIXTUREKEY": "/data/CCBR_Pipeliner/db/PipeDB/lib/1k_genomes_superpop_key.txt",
         "ADMIXTUREREFS": "5",
         "MAF_FILTERVCF": "/data/CCBR_Pipeliner/db/PipeDB/lib/ExAC_nonTCGA.r0.3.1.sites.vep.GRCh38.vcf.gz",
-        "MAF_GENOME": "hg38"
+        "MAF_GENOME": "hg38",
+        "VCF2MAF": {
+            "CONTAINER": "/data/CCBR_Pipeliner/db/PipeDB/db/SingularityImages/ccbr_vcf2maf_v0.1.0.sif",
+            "VEPRESOURCEBUNDLEPATH": "/data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        }
     },
     "scripts": {
+        "vcf2maf_wrapper": "/data/tandonm/pl_test_data/human/other/vcf2maf_wrapper.bash",
         "freec_p1_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass1_exome_tn_config.pl",
         "freec_p2_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass2_exome_tn_config.pl",
         "freec_significance": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/assess_significance.R",
@@ -76,6 +83,7 @@
         "gatk4": "4.1.4.1",
         "strelka": "2.9.0",
         "mutect": "1.1.7",
+        "varscan": "2.4.3",
         "vcftools": "0.1.16",
         "Control-FREEC": "11.5",
         "R": "3.6.1"

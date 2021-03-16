@@ -215,6 +215,7 @@ if not caller_list:
         """.format(input_fqdir, input_bamdir, sys.argv[0])
     )
 
+merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
 somatic_callers_dirs = [caller + "_out" for caller in list(caller_list)]
 
 samples_for_caller_merge=[]
@@ -224,10 +225,10 @@ if (len(caller_list) > 1):
     merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
     merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
     samples_for_caller_merge=pairs_ids
+    somatic_callers_dirs=list(somatic_callers_dirs + [merge_outdir])
 
-merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
 
-VCF2MAF_WRAPPER="/data/tandonm/vcf2maf_testing/latest/vcf2maf_wrapper.bash"
+VCF2MAF_WRAPPER=config['scripts']['vcf2maf_wrapper']
 SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter","sobdetector")
 SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile","SOBDetector_v1.0.2.jar")
 
@@ -238,8 +239,6 @@ ffpe_sample_list=[]
 if 'FFPE_FILTER' in config['input_params']:
     if config['input_params']['FFPE_FILTER'].lower() in ['true','t','yes']:
         ffpe_caller_list=somatic_callers_dirs
-        if ffpe_caller_list:
-            ffpe_caller_list=list(ffpe_caller_list + [merge_outdir])
         ffpe_sample_list=pairs_ids
     
   
@@ -483,9 +482,9 @@ rule strelka:
            tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam")
     output: vcf=os.path.join(output_somatic_snpindels,"strelka_out","chrom_split","{samples}.{chroms}.vcf"),
             # final=os.path.join(output_somatic_snpindels,"strelka_out","chrom_split","{samples}.{chroms}.filtered.vcf"),
-    params: genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,rname="strelka"
+    params: genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_strelka=config['tool_versions']['strelka'],rname="strelka"
     shell: """
-           module load strelka/2.9.0
+           module load strelka/{params.ver_strelka}
            workdir={params.basedir}
            myoutdir="$(dirname {output.vcf})/{wildcards.samples}/{wildcards.chroms}"
            if [ -d "$myoutdir" ]; then rm -r "$myoutdir"; fi
@@ -584,12 +583,12 @@ rule varscan:
                # sequenza_purity=os.path.join(output_somatic_cnv,"sequenza_out","{samples}_alternative_solutions.txt")
        output: vcf=os.path.join(output_somatic_snpindels,"varscan_out","chrom_split","{samples}.{chroms}.vcf"),
                # samplesfile=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.samples")
-       params: genome=config['references']['GENOME'],normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",rname="varscan"
+       params: genome=config['references']['GENOME'],normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",ver_varscan=config['tool_versions']['varscan'],rname="varscan"
        shell:  """
                if [ ! -d "$(dirname {output.vcf})" ]; then
                    mkdir -p "$(dirname {output.vcf})"
                fi
-               module load VarScan/2.4.3
+               module load VarScan/{params.ver_varscan}
                
                tumor_purity=$( echo "1-$(tail -n -1 {input.tumor_summary} | cut -f2 )" | bc -l)
                normal_purity=$( echo "1-$(tail -n -1 {input.normal_summary} | cut -f2 )" | bc -l)
@@ -651,6 +650,7 @@ rule merge_somatic_callers:
            echo $nthread
            java -Xmx60g -Djava.io.tmpdir=/lscratch/$SLURM_JOBID -jar $GATK_JAR -T CombineVariants -R {params.genome} -nt $nthread --filteredrecordsmergetype KEEP_IF_ANY_UNFILTERED --genotypemergeoption PRIORITIZE --rod_priority_list {params.rodprioritylist} --minimumN 1 -o {output.mergedvcf} {params.variantsargs}
            """
+           
            
 rule somatic_mafs:
   input: filtered_vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
@@ -1000,7 +1000,7 @@ rule genotype:
         gatk --java-options '-Xmx96g' GenotypeGVCFs --reference {params.genome} --use-jdk-inflater --use-jdk-deflater --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.vcf} --variant {input.gzvcf} --intervals {params.chr}
         """
 
-rule merge_chrom:
+rule germline_merge_chrom:
     input:
         expand(os.path.join(output_germline_base,"VCF","by_chrom","raw_variants.{chroms}.vcf.gz"), chroms=chroms),
     output:
@@ -1010,7 +1010,7 @@ rule merge_chrom:
         rname = "merge_chrom", genome = config['references']['GENOME']
     shell:
         """
-        ls -d $(dirname "{output.list}")/raw_variants_*.vcf.gz > "{output.list}"
+        ls -d $(dirname "{output.list}")/raw_variants.*.vcf.gz > "{output.list}"
         module load GATK/4.1.7.0
         gatk MergeVcfs -R {params.genome} --INPUT="{output.list}" --OUTPUT={output.vcf}
         """
