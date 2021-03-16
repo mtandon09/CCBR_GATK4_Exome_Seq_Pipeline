@@ -79,7 +79,13 @@ optional arguments:
                         arguments.
 ```
 
-## Example Run (untested)
+## Example Run
+The test data contains 10 million randomly sampled read pairs from three human cell lines.
+
+Starting from BAM files, the basic pipeline (germline and somatic SNP calling) for this test data runs in a little over 2 hours total. 
+
+[Tumor-Normal Snakemake Report](tumor_normal/skeleton/report.html)
+
 ```
 
 ## Run this in the skeleton directory (or a copy)
