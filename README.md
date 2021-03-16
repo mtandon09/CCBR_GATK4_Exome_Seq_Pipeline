@@ -1,6 +1,8 @@
 # hg38 pipeline
 -------------------------------------------------
-Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.
+~~Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.~~
+
+Both `tumor_only` and `tumor_normal` are functional.  It got too complicated to merge them together, so they are separate for now.
 
 ### Deploying
 So far, I've usually been creating a copy of the skeleton for each run. Then I either edit the config json (`references_hg38.json` *prob wanna change this filename* lol) and call snakemake manually. Or increasingly, I've built up the `run.sh` script to handle most of the things I needed during development.  Theoretically by setting the input/output options correctly, a common skeleton can be used for any number of jobs but I have not tested it thoroughly.
@@ -38,7 +40,8 @@ usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM]
               [--pairs PAIRS] [--callers CALLERS] [--targets TARGETS]
               [--ffpe FFPE] [--cnv CNV] [--outdir OUTDIR] [--dryrun DRYRUN]
               [--unlock UNLOCK] [--until UNTIL] [--local LOCAL]
-              [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--config CONFIG]
+              [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--report REPORT]
+              [--config CONFIG]
 
 Run muh pipelinezz
 
@@ -74,12 +77,20 @@ optional arguments:
   --rulegraph RULEGRAPH
                         Path to a PNG file to which the rules DAG will be
                         written
+  --report REPORT       Path to an HTML file to which the snakemake report
+                        will be written
   --config CONFIG       Manually set the 'input_params' section of the
                         snakemake config file. Overrides any [input_params]
                         arguments.
 ```
 
-## Example Run (untested)
+## Example Run
+The test data contains 10 million randomly sampled read pairs from three human cell lines.
+
+Starting from BAM files, the basic pipeline (germline and somatic SNP calling) for this test data runs in a little over 2 hours total. 
+
+[Tumor-Normal Snakemake Report](tumor_normal/skeleton/report.html)
+
 ```
 
 ## Run this in the skeleton directory (or a copy)
