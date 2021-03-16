@@ -4,7 +4,7 @@
 
 Both `tumor_only` and `tumor_normal` are functional.  It got too complicated to merge them together, so they are separate for now.
 
-<a href="https://imgflip.com/i/51zfhx"><img src="https://i.imgflip.com/51zfhx.jpg" title="Waiting for snakemake"/></a><div><a href="https://imgflip.com/memegenerator">from Imgflip Meme Generator</a></div>
+<a href="https://imgflip.com/i/51zfhx"><img src="https://i.imgflip.com/51zfhx.jpg" title="Waiting for snakemake"/></a>
 
 ### Deploying
 So far, I've usually been creating a copy of the skeleton for each run. Then I either edit the config json (`references_hg38.json` *prob wanna change this filename* lol) and call snakemake manually. Or increasingly, I've built up the `run.sh` script to handle most of the things I needed during development.  Theoretically by setting the input/output options correctly, a common skeleton can be used for any number of jobs but I have not tested it thoroughly.
