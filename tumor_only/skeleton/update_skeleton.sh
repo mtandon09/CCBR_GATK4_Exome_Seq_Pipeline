@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-source_dir="/data/MyPART/mt_tools/tumor_normal_pipeline/test_6"
+source_dir="/scratch/tandonm/exome_pipeline_dev_mt/tumor_only/skeleton"
 
 for file in *
 do

@@ -142,23 +142,26 @@ def _sym_safe_(input_data, target):
 
     return input_fastqs
 
-
+def read_pairsfile(pairs_filepath):
+    ## Could add more error-checking here; file access, header names,...
+    if not os.path.isfile(pairs_filepath):
+        raise NameError("""\n\tFatal: The pairs file was not found!
+        This is the path that was given in the config: {}
+        """.format(pairs_filepath, sys.argv[0])
+        )
+    df = pd.read_csv(pairs_filepath, header=0, sep='\t')
+    mydict = dict(zip(df['Tumor'].tolist(), df['Normal'].tolist()))
+    return mydict
 
 configfile:"references_hg38.json"
 
-######### PARSE INPUTS #########
-#print(listdir(os.getcwd()))
-# pairs_file = config['input_params']['PAIRS_FILE']
-# df = pd.read_csv(pairs_file, header=0, sep='\t')
-# pairs_dict = dict(zip(df['Tumor'].tolist(), df['Normal'].tolist()))
-# pairs_ids=list(pairs_dict.keys())
 
 ######### PARSE CONFIG PARAMS #########
-BASEDIR=os.path.realpath(config['output_params']['BASE_DIR'])
+BASEDIR=os.path.realpath(config['input_params']['BASE_OUTDIR'])
 input_fqdir=config['input_params']['FASTQ_SOURCE']
 fqs_found=glob.glob(os.path.join(input_fqdir,'*.fastq.gz'))
 
-input_bamdir=os.path.join(BASEDIR,config['input_params']['BAM_SOURCE'])
+input_bamdir=os.path.join(config['input_params']['BAM_SOURCE'])
 bams_found=glob.glob(os.path.join(input_bamdir,'*.bam'))
 
 output_fqdir=os.path.join(BASEDIR,config['output_params']['FASTQ'])
@@ -176,57 +179,68 @@ if fqs_found:
         name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
 elif bams_found:
     name_suffix=".recal.bam"
-    if [ os.path.exists(input_bamdir) ]:
-        if not os.path.exists(output_bamdir):
-            # print("making"+output_bamdir)
-            os.makedirs(output_bamdir) 
-
-        if (len(os.listdir(output_bamdir))==0):
-            # print("Symlinking source bams...")
-            bam_symlinks=_sym_safe_(bams_found, output_bamdir)
-        
-        name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
-    else:
-        print("BAM source directory not found.")
+    if not os.path.exists(output_bamdir):
+        os.makedirs(output_bamdir) 
+    if (len(os.listdir(output_bamdir))==0):
+        bam_symlinks=_sym_safe_(bams_found, output_bamdir)
+    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
 else:
-    exit("Neither BAMs nor FASTQs found")
+    raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
+        FASTQ source path provided: {}
+        BAM source path provided: {}
+        Folders should contain files ending with '.fastq.gz' or '.bam' respectively.
+        """.format(input_fqdir, input_bamdir, sys.argv[0])
+    )
 
 samples = set([re.sub(name_suffix,"",os.path.basename(fname)) for fname in name_symlinks]) ## Only returns paired fqs
-# print(samples)
-#### Should add some checking for overlap between 'samples' and pair IDs!!! ---
-    
 
+pairs_file = config['input_params']['PAIRS_FILE']
+if not pairs_file:
+    pairs_dict=dict.fromkeys(samples)
+else:
+    pairs_dict = read_pairsfile(pairs_file)
+
+pairs_ids=list(pairs_dict.keys())
 
 output_germline_base=os.path.join(BASEDIR,"germline")
 output_somatic_base=os.path.join(BASEDIR,"somatic")
 output_somatic_snpindels=os.path.join(output_somatic_base,"SNP_Indels")
 output_somatic_cnv=os.path.join(output_somatic_base,"CNV")
 
-# print(glob.glob(os.path.join(dir_raw,'*.fastq.gz')))
-# print(fq_symlinks)
-# exit
-# samplesb=["Sample10_ARK1_S37.test","Sample11_ACI_158_S38.test","Sample4_CRL1622_S31.test"]
-# samplesb=all_samples
+chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY","chrM"]
 
-chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY"] ### Should be moved to json
+# caller_dict=config['output_params']['SOMATIC_VCF']
+caller_list=[caller_name.lower() for caller_name in config['input_params']['VARIANT_CALLERS']]
+caller_list=list(set(caller_list) & set(config['available_somatic_callers']))
 
-somatic_callers_dirs = list(config['output_params']['SOMATIC_VCF'].values())
-somatic_callers_dirs.remove("merged_somatic_variants")
-# print(somatic_callers_dirs+["merged_somatic_variants"])
-merge_callers = list(config['output_params']['SOMATIC_VCF'].keys())
-# print(merge_callers)
-merge_callers.remove("merged")
-merge_callers_rodlist=",".join([re.sub("_out","",caller) for caller in merge_callers])
-# print(merge_callers_rodlist)
+if not caller_list:
+    raise NameError("""\n\tFatal: Must define one or more variant caller!
+        """.format(input_fqdir, input_bamdir, sys.argv[0])
+    )
 
+somatic_callers_dirs = [caller + "_out" for caller in list(caller_list)]
 
-merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",sample_id) for vc_out in somatic_callers_dirs] for sample_id in samples]
-merge_callers_args = dict(zip(samples, [" ".join(arglist) for arglist in merge_callers_args_list]))
-# print(merge_callers_args)
+# samples_for_caller_merge=[]
+# merge_callers_args=dict.fromkeys(pairs_ids)
+# merge_callers_rodlist=",".join(caller_list)
+# if (len(caller_list) > 1):
+#     merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
+#     merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
+#     samples_for_caller_merge=pairs_ids
 
-VCF2MAF_WRAPPER="/data/tandonm/vcf2maf_testing/latest/vcf2maf_wrapper.bash"  ### Should be moved to json
-SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter/sobdetector")
-SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile/SOBDetector_v1.0.2.jar") ### Should be moved to json (?)
+samples_for_caller_merge=[]
+merge_callers_args=dict.fromkeys(pairs_ids)
+merge_callers_rodlist=",".join(caller_list)
+if (len(caller_list) > 1):
+    merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
+    merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
+    samples_for_caller_merge=pairs_ids
+
+merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
+
+VCF2MAF_WRAPPER=config['scripts']['vcf2maf_wrapper']
+SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter","sobdetector")
+SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile","SOBDetector_v1.0.2.jar")
 
 exome_targets_bed=config['input_params']['EXOME_TARGETS']
 
@@ -234,17 +248,26 @@ ffpe_caller_list=[]
 ffpe_sample_list=[]
 if 'FFPE_FILTER' in config['input_params']:
     if config['input_params']['FFPE_FILTER'].lower() in ['true','t','yes']:
-        ffpe_caller_list=list(somatic_callers_dirs + ["merged_somatic_variants"])
-        ffpe_sample_list=samples
+        ffpe_caller_list=somatic_callers_dirs
+        if ffpe_caller_list:
+            ffpe_caller_list=list(ffpe_caller_list + [merge_outdir])
+        ffpe_sample_list=pairs_ids
     
   
 cnv_sample_list=[]
-# if 'CNV_CALLING' in config['input_params']:
-#     if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
-#         cnv_sample_list=samples
+if 'CNV_CALLING' in config['input_params']:
+    if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
+        cnv_sample_list=pairs_ids    
     
-    
-    
+# print(somatic_callers_dirs)
+# print(samples_for_caller_merge)
+# print(config['input_params']['FFPE_FILTER'].lower() )
+# print(ffpe_caller_list)
+# print(len(caller_list))
+# # print(pairs_dict)
+# print(merge_callers_args)
+# exit()
+
 #
 # Set rule all
 #
@@ -254,16 +277,16 @@ rule all:
         expand(os.path.join(output_bamdir,"{samples}.recal.bai"), samples=samples),
         expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
 
-        expand(os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),samples=samples),
-        expand(os.path.join(output_somatic_snpindels,"merged_somatic_variants","maf","{samples}.maf"),samples=samples),
-        # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=samples, vc_outdir=somatic_callers),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"maf","{samples}.maf"),samples=samples_for_caller_merge),
+        # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=pairs_ids, vc_outdir=somatic_callers),
         
         expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=somatic_callers_dirs),
-        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), samplessamples, vc_outdir=somatic_callers),
+        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), samplespairs_ids, vc_outdir=somatic_callers),
         
         expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"), samples=ffpe_sample_list, vc_outdir=ffpe_caller_list),
         expand(os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=ffpe_caller_list),
-        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"), samplessamples, vc_outdir=somatic_callers_dirs),
+        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"), samplespairs_ids, vc_outdir=somatic_callers_dirs),
         expand(os.path.join(SOBDetector_out,"{vc_outdir}","metrics","all_metrics.txt"), vc_outdir=ffpe_caller_list),
         
         
@@ -389,7 +412,7 @@ rule split_bam_by_chrom:
               cp {output.split_bam_idx} {output.split_bam}.bai
               """
 
-rule gatk_mutect2:
+rule mutect2_single:
     input: tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam")
     output: vcf=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.vcf"),
             read_orientation_file=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.f1r2.tar.gz"),
@@ -433,18 +456,23 @@ rule LearnReadOrientationModel:
 #            GATK -m 48G CombineVariants -R {params.genome} --filteredrecordsmergetype KEEP_UNCONDITIONAL --assumeIdenticalSamples -o {output.vcf} $input_str
 #            """
 
-rule contamination:
+rule pileup:
     input: tumor=os.path.join(output_bamdir,"{samples}.recal.bam"),
-    output: pileup=temp(os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_tumor.pileup.table")),
-            tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
+    output: pileup=temp(os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}.pileup.table")),
     params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],chroms=chroms, rname="pileup"
     shell: """
            module load GATK/{params.ver_gatk}
            chromslist="-L $(echo "{params.chroms}" | sed -e 's/ / -L /g')"
+           gatk --java-options '-Xmx10g' GetPileupSummaries -I {input.tumor} -V {params.germsource} -L {params.germsource} -O {output.pileup}
+           """
            
-           gatk --java-options '-Xmx48g' GetPileupSummaries -I {input.tumor} -V {params.germsource} -L {params.germsource} "$chromslist" -O {output.pileup}
-           
-           gatk CalculateContamination -I {output.pileup} -O {output.tumor_summary}
+rule contamination:
+    input: pileup=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}.pileup.table"),
+    output: tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
+    params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],chroms=chroms, rname="pileup"
+    shell: """
+           module load GATK/{params.ver_gatk}
+           gatk CalculateContamination -I {input.pileup} -O {output.tumor_summary}
            """
 
 # rule pileup_normal:
@@ -465,7 +493,7 @@ rule contamination:
 #            gatk CalculateContamination -I {input.tumor} -O {output.tumor_summary}
            # """
 
-rule mutect2_filter:
+rule mutect2_filter_single:
     input: vcf=os.path.join(output_somatic_snpindels,"mutect2_out","vcf","{samples}.collected.vcf"),
            summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
            model=os.path.join(output_somatic_snpindels,"mutect2_out","read_orientation_data","{samples}.read-orientation-model.tar.gz"),
@@ -485,7 +513,7 @@ rule mutect2_filter:
            mv $(dirname "{output.marked_vcf}")/{params.tumorsample}.filtered.recode.vcf {output.vcf}
            """
 
-rule mutect:
+rule mutect_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
        output: vcf=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.vcf"),
                stats=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.stats.out"),
@@ -504,7 +532,7 @@ rule mutect:
                muTect --analysis_type MuTect --reference_sequence {params.genome} --normal_panel {params.pon} --vcf {output.vcf} --cosmic {params.cosmic} --dbsnp {params.dbsnp} -L {wildcards.chroms} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
                """
 
-rule mutect_filter:
+rule mutect_filter_single:
     input: vcf=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.collected.vcf"),
     output: final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
     params: tumorsample="{samples}",genome=config['references']['GENOME'],ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
@@ -513,7 +541,7 @@ rule mutect_filter:
            gatk SelectVariants -R {params.genome} --variant {input.vcf} --exclude-filtered --output {output.final}
            """
 
-rule vardict:
+rule vardict_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
        output: vcf=os.path.join(output_somatic_snpindels,"vardict_out","chrom_split","{samples}.{chroms}.vcf"),
        params: genome=config['references']['GENOME'],targets=exome_targets_bed,pon=config['references']['PON'],rname="vardict"
@@ -528,48 +556,52 @@ rule vardict:
                /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/teststrandbias.R | \
                /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/var2vcf_valid.pl -N {wildcards.samples} -Q 20 -d 10 -v 6 -S -E -f 0.05 > {output.vcf};
                """
-rule vardict_filter:
+rule vardict_filter_single:
        input:  vcf=os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.collected.vcf"),
        output: final=os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.FINAL.vcf"),
-               filtered=temp(os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.filtered.vcf")),
+               # filtered=temp(os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.filtered.vcf")),
        params: tumorsample="{samples}",genome=config['references']['GENOME'],targets=exome_targets_bed,pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="vardict"
        shell:  """
                module load GATK/{params.ver_gatk}
                gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.final}
                """
 
-rule varscan:
+rule varscan_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
                # tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
                # sequenza_purity=os.path.join(output_somatic_cnv,"sequenza_out","{samples}_alternative_solutions.txt")
        output: vcf=os.path.join(output_somatic_snpindels,"varscan_out","chrom_split","{samples}.{chroms}.vcf"),
                # samplesfile=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.samples")
-       params: genome=config['references']['GENOME'],rname="varscan"
+       params: genome=config['references']['GENOME'],ver_varscan=config['tool_versions']['varscan'],rname="varscan"
        shell:  """
                if [ ! -d "$(dirname {output.vcf})" ]; then
                    mkdir -p "$(dirname {output.vcf})"
                fi
-               module load VarScan/2.4.3
+               module load VarScan/{params.ver_varscan}
                
-               varscan_opts="--strand-filter 1 --min-var-freq 0.05 --min-avg-qual 30 --p-value 0.05 --output-vcf 1"
+               varscan_opts="--strand-filter 0 --min-var-freq 0.01 --p-value 0.05 --output-vcf 1 --variants 1"
                
                pileup_cmd="samtools mpileup -d 10000 -q 15 -Q 15 -f {params.genome} {input.tumor}"
                varscan_cmd="varscan mpileup2cns <($pileup_cmd) $varscan_opts"
                
                full_cmd="$varscan_cmd | bcftools view -U > {output.vcf}"
                
-               eval "$full_cmd"
+               eval "$full_cmd"               
                """
 
-rule varscan_filter:
+rule varscan_filter_single:
     input: vcf=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.collected.vcf"),
     output: filtered=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.filtered.vcf")),
+            filtered1=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.filtered.1.vcf")),
             samplesfile=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf.samples")),
             final=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf"),
-    params: tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
+    params: tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_gatk=config['tool_versions']['gatk4'],ver_varscan=config['tool_versions']['varscan'],rname="varscan_filter"
     shell: """
+           module load VarScan/{params.ver_varscan}
+           varscan filter {input.vcf} --strand-filter 1 --min-reads2 5 --min-strands2 2 --min-var-freq 0.02 --p-value 0.01 --min-avg-qual 30 > {output.filtered1}
+           
            module load GATK/{params.ver_gatk}
-           gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.filtered}
+           gatk SelectVariants -R {params.genome} --variant {output.filtered1} --discordance {params.pon} --exclude-filtered --output {output.filtered}
            samplesFile="{output.samplesfile}"
            echo -e "TUMOR\t{params.tumorsample}\n" > "{output.samplesfile}"
            
@@ -591,7 +623,7 @@ rule somatic_merge_chrom:
                
 
 rule merge_somatic_callers:
-    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=merge_callers)
+    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=caller_list)
     output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
     params: genome=config['references']['GENOME'],rodprioritylist=merge_callers_rodlist, variantsargs=lambda w: [merge_callers_args[w.samples]], rname="MergeVariantCallers"
     shell: """
@@ -967,6 +999,7 @@ rule germline_merge_chrom:
         module load GATK/4.1.7.0
         gatk MergeVcfs -R {params.genome} --INPUT="{output.list}" --OUTPUT={output.vcf}
         """
+
 
 rule Gatk_SelectVariants:
 	input: vcf=os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
