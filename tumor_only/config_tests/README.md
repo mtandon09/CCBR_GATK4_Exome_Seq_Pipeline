@@ -120,23 +120,6 @@ If the fastq directory does not contain fastq files, the BAM directory will be u
 
 
 
-
----------------------------------------------------
-## Add copy number variant (CNV) calling
-
-This is turned off by default, so use the option in `run.sh` to turn it on.
-```
-## Add CNV calling
-## Should be set of one of 'true', 't', or 'yes' (case-insensitive)
-./run.sh --rulegraph "$pngdir/rules.CNV.png" \
-         --pairs "$pairs_file" \
-         --sourcebam "$test_data_bam" \
-         --cnv "True"
-```
-
-![With CNV calling](rulegraphs/rules.CNV.png)
-
-
 ---------------------------------------------------
 ## Add FFPE artifact filtering
 
