@@ -208,6 +208,11 @@ output_somatic_snpindels=os.path.join(output_somatic_base,"SNP_Indels")
 output_somatic_cnv=os.path.join(output_somatic_base,"CNV")
 
 chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY","chrM"]
+intervals_file=os.path.join(BASEDIR,"intervals.list")
+if not os.path.isfile(intervals_file):
+    with open(intervals_file, 'w') as f:
+        f.write("\n".join(chroms))
+        f.close
 
 # caller_dict=config['output_params']['SOMATIC_VCF']
 caller_list=[caller_name.lower() for caller_name in config['input_params']['VARIANT_CALLERS']]
@@ -271,13 +276,15 @@ if 'CNV_CALLING' in config['input_params']:
 #
 # Set rule all
 #
+
 rule all:
     input:
         expand(os.path.join(output_bamdir,"{samples}.recal.bam"), samples=samples),
         expand(os.path.join(output_bamdir,"{samples}.recal.bai"), samples=samples),
         expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
 
-        expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
+        # expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.norm.vcf"),samples=samples_for_caller_merge),
         expand(os.path.join(output_somatic_snpindels,merge_outdir,"maf","{samples}.maf"),samples=samples_for_caller_merge),
         # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=pairs_ids, vc_outdir=somatic_callers),
         
@@ -339,7 +346,7 @@ rule bwa_mem:
 rule raw_index:
       input:  bam=os.path.join(output_bamdir,"{samples}.raw_map.bam")
       output: bai=temp(os.path.join(output_bamdir,"{samples}.raw_map.bai")),
-      params: ver_samtools=config['tool_versions']['samtools'],rname="index"
+      params: ver_samtools=config['tool_versions']['samtools'],rname="raw_index"
       shell:  """
               module load samtools/{params.ver_samtools}
               samtools index -@ 2 {input.bam} {output.bai}
@@ -372,7 +379,7 @@ rule bam_index:
       input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
       output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
               bai2=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
-      params: ver_samtools=config['tool_versions']['samtools'],rname="index"
+      params: ver_samtools=config['tool_versions']['samtools'],rname="bam_index"
       shell:  """
               module load samtools/{params.ver_samtools}
               samtools index -@ 2 {input.bam} {output.bai}
@@ -401,7 +408,7 @@ rule split_bam_by_chrom:
               bai=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
       output: split_bam=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
               split_bam_idx=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bai")
-      params: ver_samtools=config['tool_versions']['samtools'],rname="index"
+      params: ver_samtools=config['tool_versions']['samtools'],rname="bam_split"
       shell:  """
               if [ ! -d "$(dirname {output.split_bam})" ]; then
                 mkdir -p "$(dirname {output.split_bam})"
@@ -415,6 +422,7 @@ rule split_bam_by_chrom:
 rule mutect2_single:
     input: tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam")
     output: vcf=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.vcf"),
+            # vcfgz=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.vcf.gz"),
             read_orientation_file=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.f1r2.tar.gz"),
             statsfiles=os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{samples}.{chroms}.vcf.stats")
     params: tumorsample="{samples}",
@@ -422,6 +430,7 @@ rule mutect2_single:
             pon=config['references']['PON'],
             germsource=config['references']['GNOMAD'],
             ver_gatk=config['tool_versions']['gatk4'],
+            # ver_bcftools=config['tool_versions']['bcftools'],
             rname="mutect2"
     threads: 2
     shell: """
@@ -431,6 +440,9 @@ rule mutect2_single:
            module load GATK/{params.ver_gatk}
            gatk Mutect2 -R {params.genome} -I {input.tumor} --panel-of-normals {params.pon} --germline-resource {params.germsource} -L {wildcards.chroms} -O {output.vcf} --f1r2-tar-gz {output.read_orientation_file} --independent-mates
            """
+           # module load bcftools/{params.ver_bcftools}
+           # bgzip --threads $((SLURM_CPUS_PER_TASK - 1)) -c "{output.vcf}" > "{output.vcfgz}"
+           # bcftools index -t {output.vcfgz}
 
 rule LearnReadOrientationModel:
     input: vcf=expand(os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{{samples}}.{chroms}.vcf"), chroms=chroms),
@@ -455,15 +467,16 @@ rule LearnReadOrientationModel:
 #            input_str="--variant $(echo "{input.vcf}" | sed -e 's/ / --variant /g')"
 #            GATK -m 48G CombineVariants -R {params.genome} --filteredrecordsmergetype KEEP_UNCONDITIONAL --assumeIdenticalSamples -o {output.vcf} $input_str
 #            """
-
+        
 rule pileup:
     input: tumor=os.path.join(output_bamdir,"{samples}.recal.bam"),
+           bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
+           intervals=intervals_file
     output: pileup=temp(os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}.pileup.table")),
     params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],chroms=chroms, rname="pileup"
     shell: """
            module load GATK/{params.ver_gatk}
-           chromslist="-L $(echo "{params.chroms}" | sed -e 's/ / -L /g')"
-           gatk --java-options '-Xmx10g' GetPileupSummaries -I {input.tumor} -V {params.germsource} -L {params.germsource} -O {output.pileup}
+           gatk --java-options "-Xmx10g -Djava.io.tmpdir=/lscratch/$SLURM_JOBID" GetPileupSummaries -R {params.genome} -I {input.tumor} -V {params.germsource} -L {input.intervals} -O {output.pileup}
            """
            
 rule contamination:
@@ -499,23 +512,33 @@ rule mutect2_filter_single:
            model=os.path.join(output_somatic_snpindels,"mutect2_out","read_orientation_data","{samples}.read-orientation-model.tar.gz"),
            statsfiles=expand(os.path.join(output_somatic_snpindels,"mutect2_out","chrom_split","{{samples}}.{chroms}.vcf.stats"), chroms=chroms)
     output: marked_vcf=os.path.join(output_somatic_snpindels,"mutect2_out","vcf","{samples}.filtered.vcf"),
-            vcf=os.path.join(output_somatic_snpindels,"mutect2_out","vcf","{samples}.FINAL.vcf")
-    params: tumorsample="{samples}",genome=config['references']['GENOME'],ver_gatk=config['tool_versions']['gatk4'],ver_vcftools=config['tool_versions']['vcftools'],rname="filter"
+            final=os.path.join(output_somatic_snpindels,"mutect2_out","vcf","{samples}.FINAL.vcf"),
+            norm=os.path.join(output_somatic_snpindels,"mutect2_out","vcf","{samples}.FINAL.norm.vcf"),
+    params: tumorsample="{samples}",
+            genome=config['references']['GENOME'],
+            ver_gatk=config['tool_versions']['gatk4'],
+            ver_bcftools=config['tool_versions']['bcftools'],
+            rname="mutect2_filter"
     shell: """
            module load GATK/{params.ver_gatk}
            
            statfiles="--stats $(echo "{input.statsfiles}" | sed -e 's/ / --stats /g')"
-           gatk MergeMutectStats $statfiles -O {output.vcf}.stats
-           gatk FilterMutectCalls -R {params.genome} -V {input.vcf} --ob-priors {input.model} --contamination-table {input.summary} -O {output.marked_vcf} --stats {output.vcf}.stats
+           gatk MergeMutectStats $statfiles -O {output.final}.stats
+           gatk FilterMutectCalls -R {params.genome} -V {input.vcf} --ob-priors {input.model} --contamination-table {input.summary} -O {output.marked_vcf} --stats {output.final}.stats
+           gatk SelectVariants -R {params.genome} --variant {output.marked_vcf} --exclude-filtered --output {output.final}
            
-           module load vcftools/{params.ver_vcftools}
-           vcftools --vcf {output.marked_vcf} --recode --remove-filtered-all --out $(dirname "{output.marked_vcf}")/{params.tumorsample}.filtered
-           mv $(dirname "{output.marked_vcf}")/{params.tumorsample}.filtered.recode.vcf {output.vcf}
+           module load bcftools/{params.ver_bcftools}
+           ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+           ## From: https://github.com/fpbarthel/GLASS/issues/23
+           bcftools sort -T /lscratch/$SLURM_JOB_ID "{output.final}" | \
+               bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+               awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.norm}
            """
 
 rule mutect_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
        output: vcf=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.vcf"),
+               # vcfgz=temp(os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.vcf.gz")),
                stats=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.stats.out"),
                # final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
        params: genome=config['references']['GENOME'],
@@ -523,6 +546,7 @@ rule mutect_single:
                cosmic=config['references']['COSMIC'],
                dbsnp=config['references']['DBSNP'],
                ver_mutect=config['tool_versions']['mutect'],
+               # ver_bcftools=config['tool_versions']['bcftools'],
                rname="mutect"
        shell:  """
                myoutdir="$(dirname {output.vcf})"
@@ -535,16 +559,33 @@ rule mutect_single:
 rule mutect_filter_single:
     input: vcf=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.collected.vcf"),
     output: final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
-    params: tumorsample="{samples}",genome=config['references']['GENOME'],ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
+            norm=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.norm.vcf"),
+    params: tumorsample="{samples}",
+            genome=config['references']['GENOME'],
+            ver_gatk=config['tool_versions']['gatk4'],
+            ver_bcftools=config['tool_versions']['bcftools'],
+            rname="strelka_filter"
     shell: """
            module load GATK/{params.ver_gatk}
            gatk SelectVariants -R {params.genome} --variant {input.vcf} --exclude-filtered --output {output.final}
+           
+           module load bcftools/{params.ver_bcftools}
+           ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+           ## From: https://github.com/fpbarthel/GLASS/issues/23
+           bcftools sort -T /lscratch/$SLURM_JOB_ID "{output.final}" | \
+               bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+               awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.norm}
            """
 
 rule vardict_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
        output: vcf=os.path.join(output_somatic_snpindels,"vardict_out","chrom_split","{samples}.{chroms}.vcf"),
-       params: genome=config['references']['GENOME'],targets=exome_targets_bed,pon=config['references']['PON'],rname="vardict"
+               # vcfgz=temp(os.path.join(output_somatic_snpindels,"vardict_out","chrom_split","{samples}.{chroms}.vcf.gz")),
+       params: genome=config['references']['GENOME'],
+               targets=exome_targets_bed,
+               pon=config['references']['PON'],
+               ver_bcftools=config['tool_versions']['bcftools'],
+               rname="vardict"
        shell:  """
                myoutdir="$(dirname {output.vcf})"
                if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
@@ -554,25 +595,39 @@ rule vardict_single:
                
                /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/VarDict -G {params.genome} -f 0.05 -x 500 --nosv -b {input.tumor} -t -Q 20 -c 1 -S 2 -E 3 {params.targets} | \
                /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/teststrandbias.R | \
-               /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/var2vcf_valid.pl -N {wildcards.samples} -Q 20 -d 10 -v 6 -S -E -f 0.05 > {output.vcf};
+               /data/CCBR_Pipeliner/db/PipeDB/bin/VarDictJava/build/install/VarDict/bin/var2vcf_valid.pl -N {wildcards.samples} -Q 20 -d 10 -v 6 -S -E -f 0.05 > {output.vcf}
                """
+
 rule vardict_filter_single:
        input:  vcf=os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.collected.vcf"),
        output: final=os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.FINAL.vcf"),
+               norm=os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.FINAL.norm.vcf"),
                # filtered=temp(os.path.join(output_somatic_snpindels,"vardict_out","vcf","{samples}.filtered.vcf")),
-       params: tumorsample="{samples}",genome=config['references']['GENOME'],targets=exome_targets_bed,pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="vardict"
+       params: tumorsample="{samples}",
+               genome=config['references']['GENOME'],
+               targets=exome_targets_bed,pon=config['references']['PON'],
+               ver_gatk=config['tool_versions']['gatk4'],
+               ver_bcftools=config['tool_versions']['bcftools'],
+               rname="vardict"
        shell:  """
                module load GATK/{params.ver_gatk}
                gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.final}
+               
+               module load bcftools/{params.ver_bcftools}
+               ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+               ## From: https://github.com/fpbarthel/GLASS/issues/23
+               bcftools sort -T /lscratch/$SLURM_JOB_ID "{output.final}" | \
+                   bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+                   awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.norm}
                """
 
 rule varscan_single:
        input:  tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
-               # tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
-               # sequenza_purity=os.path.join(output_somatic_cnv,"sequenza_out","{samples}_alternative_solutions.txt")
        output: vcf=os.path.join(output_somatic_snpindels,"varscan_out","chrom_split","{samples}.{chroms}.vcf"),
-               # samplesfile=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.samples")
-       params: genome=config['references']['GENOME'],ver_varscan=config['tool_versions']['varscan'],rname="varscan"
+       params: genome=config['references']['GENOME'],
+               ver_varscan=config['tool_versions']['varscan'],
+               ver_bcftools=config['tool_versions']['bcftools'],
+               rname="varscan"
        shell:  """
                if [ ! -d "$(dirname {output.vcf})" ]; then
                    mkdir -p "$(dirname {output.vcf})"
@@ -586,7 +641,7 @@ rule varscan_single:
                
                full_cmd="$varscan_cmd | bcftools view -U > {output.vcf}"
                
-               eval "$full_cmd"               
+               eval "$full_cmd"
                """
 
 rule varscan_filter_single:
@@ -595,42 +650,103 @@ rule varscan_filter_single:
             filtered1=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.filtered.1.vcf")),
             samplesfile=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf.samples")),
             final=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf"),
-    params: tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_gatk=config['tool_versions']['gatk4'],ver_varscan=config['tool_versions']['varscan'],rname="varscan_filter"
+            norm=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.norm.vcf"),
+    params: tumorsample="{samples}",genome=config['references']['GENOME'],
+            pon=config['references']['PON'],
+            basedir=BASEDIR,
+            ver_gatk=config['tool_versions']['gatk4'],
+            ver_varscan=config['tool_versions']['varscan'],
+            ver_bcftools=config['tool_versions']['bcftools'],
+            rname="varscan_filter"
     shell: """
            module load VarScan/{params.ver_varscan}
-           varscan filter {input.vcf} --strand-filter 1 --min-reads2 5 --min-strands2 2 --min-var-freq 0.02 --p-value 0.01 --min-avg-qual 30 > {output.filtered1}
+           varscan filter {input.vcf} --strand-filter 1 --min-reads2 5 --min-strands2 2 --min-var-freq 0.02 --p-value 0.01 --min-avg-qual 20 > {output.filtered1}
            
            module load GATK/{params.ver_gatk}
            gatk SelectVariants -R {params.genome} --variant {output.filtered1} --discordance {params.pon} --exclude-filtered --output {output.filtered}
            samplesFile="{output.samplesfile}"
            echo -e "TUMOR\t{params.tumorsample}\n" > "{output.samplesfile}"
            
-           module load bcftools;
+           module load bcftools/{params.ver_bcftools}
            bcftools reheader -o "{output.final}" -s "{output.samplesfile}" "{output.filtered}"
+           ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+           ## From: https://github.com/fpbarthel/GLASS/issues/23
+           bcftools sort -T /lscratch/$SLURM_JOB_ID "{output.final}" | \
+            bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+            awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.norm}
            """
+           
+# rule index_vcfs_somatic:
+#     input: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","chrom_split","{samples}.{chroms}.vcf"),
+#     output: vcf=temp(os.path.join(output_somatic_snpindels,"{vc_out}","chrom_split","{samples}.{chroms}.vcf.gz")),
+#     params: ver_bcftools=config['tool_versions']['bcftools'],rname="merge"
+#     shell: """
+#            module load bcftools/{params.ver_bcftools}
+#            bgzip --threads $((SLURM_CPUS_PER_TASK - 1)) -c "{input.vcf}" > "{output.vcf}"
+#            bcftools index -t {output.vcf}
+#            """
+
+# rule somatic_merge_chrom_bcftools:
+#     input: vcf=expand(os.path.join(output_somatic_snpindels,"{{vc_out}}","chrom_split","{{samples}}.{chroms}.vcf.gz"), chroms=chroms),
+#     output: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","vcf","{samples}.collected.vcf"),
+#     params: tumorsample="{samples}",genome = config['references']['GENOME'],ver_bcftools=config['tool_versions']['bcftools'],rname="merge_chrom"
+#     shell: """
+#            module load bcftools/{params.ver_bcftools}
+#            ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+#            ## From: https://github.com/fpbarthel/GLASS/issues/23
+#            bcftools concat --threads $((SLURM_CPUS_PER_TASK - 1)) {input.vcf} | \
+#             bcftools sort -T /lscratch/$SLURM_JOB_ID | \
+#             bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+#             awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.vcf}
+#            """
 
 rule somatic_merge_chrom:
     input: vcf=expand(os.path.join(output_somatic_snpindels,"{{vc_out}}","chrom_split","{{samples}}.{chroms}.vcf"), chroms=chroms),
     output: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","vcf","{samples}.collected.vcf"),
-    params: tumorsample="{samples}",genome = config['references']['GENOME'],ver_gatk=config['tool_versions']['gatk3'],rname="merge"
+    params: tumorsample="{samples}",genome = config['references']['GENOME'],genomedict = config['references']['GENOMEDICT'],ver_gatk=config['tool_versions']['gatk4'],rname="merge"
     shell: """
            module load GATK/{params.ver_gatk}
-           input_str="--variant $(echo "{input.vcf}" | sed -e 's/ / --variant /g')"
-           GATK -m 48G CombineVariants -R {params.genome} --filteredrecordsmergetype KEEP_UNCONDITIONAL --assumeIdenticalSamples -o {output.vcf} $input_str
+           input_str="-I $(echo "{input.vcf}" | sed -e 's/ / -I /g')"
+           gatk --java-options "-Xmx30g" MergeVcfs -O "{output.vcf}" -D {params.genomedict} $input_str
            """
 
 
-               
+# rule somatic_merge_chrom:
+#     input: vcf=expand(os.path.join(output_somatic_snpindels,"{{vc_out}}","chrom_split","{{samples}}.{chroms}.vcf"), chroms=chroms),
+#     output: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","vcf","{samples}.collected.vcf"),
+#     params: tumorsample="{samples}",genome = config['references']['GENOME'],ver_gatk=config['tool_versions']['gatk3'],rname="merge"
+#     shell: """
+#            module load GATK/{params.ver_gatk}
+#            input_str="--variant $(echo "{input.vcf}" | sed -e 's/ / --variant /g')"
+#            GATK -m 48G CombineVariants -R {params.genome} --filteredrecordsmergetype KEEP_UNCONDITIONAL --assumeIdenticalSamples -o {output.vcf} $input_str
+#            """
 
+
+               
+# rule normalize_indels:
+#     input: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","vcf","{samples}.FINAL.vcf"),
+#     output: vcf=os.path.join(output_somatic_snpindels,"{vc_out}","vcf","{samples}.FINAL.norm.vcf"),
+#     params: tumorsample="{samples}",genome = config['references']['GENOME'],ver_bcftools=config['tool_versions']['bcftools'],rname="merge_chrom"
+#     shell: """
+#            module load bcftools/{params.ver_bcftools}
+#            ## (At least) VarScan outputs ambiguous IUPAC bases/codes sometimes; the piped awk one-liner sets them to N
+#            ## From: https://github.com/fpbarthel/GLASS/issues/23
+#            bcftools sort -T /lscratch/$SLURM_JOB_ID {input.vcf} | \
+#             bcftools norm --threads $((SLURM_CPUS_PER_TASK - 1)) --check-ref s -f {params.genome} -O v | \
+#             awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.vcf}
+#            """
+           
 rule merge_somatic_callers:
-    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=caller_list)
-    output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
-    params: genome=config['references']['GENOME'],rodprioritylist=merge_callers_rodlist, variantsargs=lambda w: [merge_callers_args[w.samples]], rname="MergeVariantCallers"
+    # input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=caller_list)
+    # output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
+    input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.norm.vcf"), vc_outdir=caller_list)
+    output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.norm.vcf"),
+    params: genome=config['references']['GENOME'],rodprioritylist=merge_callers_rodlist, variantsargs=lambda w: [merge_callers_args[w.samples]],ver_gatk=config['tool_versions']['gatk3'], rname="MergeSomaticCallers"
     shell: """
            if [ ! -d "$(dirname {output.mergedvcf})" ]; then
              mkdir -p "$(dirname {output.mergedvcf})"
            fi
-           module load GATK/3.8-1
+           module load GATK/{params.ver_gatk}
            input_str="--variant $(echo "{input.vcf}" | sed -e 's/ / --variant /g')"
            nthread="$((SLURM_CPUS_PER_TASK-1))"
            echo $nthread
@@ -638,14 +754,15 @@ rule merge_somatic_callers:
            """
            
 rule somatic_mafs:
-  input: filtered_vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+  # input: filtered_vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+  input: filtered_vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
          vcf2maf_script=VCF2MAF_WRAPPER
   output: maf=os.path.join(output_somatic_snpindels,"{vc_outdir}","maf","{samples}.maf")
   params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
   shell:
     """
     echo "Converting to MAF..."
-    bash {input.vcf2maf_script} --vcf {input.filtered_vcf} --maf {output.maf} --tid {params.tumorsample} --genome {params.genome} --threads "$((SLURM_CPUS_PER_TASK-1))"
+    bash {input.vcf2maf_script} --vcf {input.filtered_vcf} --maf {output.maf} --tid {params.tumorsample} --genome {params.genome} --threads "$((SLURM_CPUS_PER_TASK-1))" --info "set"
     """
   
 rule collect_cohort_mafs:
@@ -662,7 +779,7 @@ rule collect_cohort_mafs:
   
 
 rule sobdetect_get:
-    input: 
+    input: ffpe_sample_list
     output: SOBDetector_jar=SOBDetector_JARFILE
     params: rname="get_sobdetector"
     shell:
@@ -701,6 +818,8 @@ rule sobdetect_cohort_params:
     """
     echo -e "#TUMOR.alt\\tTUMOR.depth\\tTUMOR.AF\\tSOB\\tFS\\tSOR\\tTLOD\\tReadPosRankSum" > {output.all_info_file}
     cat {input.info_files} >> {output.all_info_file}
+    
+    ## This is really stupid; I'm calculating mean and standard deviation in bash; a python one liner might be better?
     grep -v ^# {output.all_info_file} | \
       awk '{{ total1 += $1; ss1 += $1^2; total2 += $2; ss2 += $2^2; total3 += $3; ss3 += $3^2; total4 += $4; ss4 += $4^2 }} END {{ print total1/NR,total2/NR,total3/NR,total4/NR; print sqrt(ss1/NR-(total1/NR)^2),sqrt(ss2/NR-(total2/NR)^2),sqrt(ss3/NR-(total3/NR)^3),sqrt(ss4/NR-(total4/NR)^2) }}' > {output.params_file}
     """
@@ -930,6 +1049,7 @@ rule combine_ffpefilter_mafs:
 rule haplotypecaller:
     input: 
         bam=os.path.join(output_bamdir, "{samples}.recal.bam"),
+        bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
     output:
         gzvcf = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz")),
         index = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz.tbi")),
@@ -937,6 +1057,9 @@ rule haplotypecaller:
         sample = "{samples}",rname = "hapcaller",genome = config['references']['GENOME'],snpsites=config['references']['DBSNP'], chrom="{chroms}"
     shell:
         """
+        myoutdir="$(dirname {output.gzvcf})"
+        if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
+         
         module load GATK/4.1.4.1
         gatk --java-options '-Xmx24g' HaplotypeCaller --reference {params.genome} --input {input.bam} --use-jdk-inflater --use-jdk-deflater --emit-ref-confidence GVCF --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.gzvcf} --intervals {params.chrom} --max-alternate-alleles 3
         """
@@ -981,6 +1104,9 @@ rule genotype:
         rname = "genotype",genome = config['references']['GENOME'],snpsites=config['references']['DBSNP'],chr="{chroms}"
     shell:
         """
+        myoutdir="$(dirname {output.vcf})"
+        if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
+        
         module load GATK/4.1.4.1
         gatk --java-options '-Xmx96g' GenotypeGVCFs --reference {params.genome} --use-jdk-inflater --use-jdk-deflater --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.vcf} --variant {input.gzvcf} --intervals {params.chr}
         """
@@ -999,7 +1125,6 @@ rule germline_merge_chrom:
         module load GATK/4.1.7.0
         gatk MergeVcfs -R {params.genome} --INPUT="{output.list}" --OUTPUT={output.vcf}
         """
-
 
 rule Gatk_SelectVariants:
 	input: vcf=os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),

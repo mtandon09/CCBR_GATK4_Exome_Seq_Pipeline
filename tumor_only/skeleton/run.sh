@@ -2,7 +2,7 @@
 set -e
 
 source /data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources/scripts/argparse.bash || exit 1
-ARGPARSE_DESCRIPTION="Run muh pipelinezz"
+ARGPARSE_DESCRIPTION="Tumor-only Pipeline"
 argparse "$@" <<EOF || exit 1
 parser.add_argument('--sourcefq',required=False, default='', help='[input_params] Path to directory containing paired FASTQ files')
 parser.add_argument('--sourcebam',required=False, default='', help='[input_params] Path to directory containing paired BAM files.  If \'--sourcefq\' is also defined, the sample IDs should match the FASTQ files.')
@@ -23,7 +23,9 @@ parser.add_argument('--config',required=False, default='', help='Manually set th
 EOF
 
 SNAKEFILE="tumor_only_hg38.snakemake"
+SUBMIT_SCRIPT="tumor_only_pipeline.sh"
 #SNAKEFILE="tumor_normal_hg38.snakemake"
+#SUBMIT_SCRIPT="tumor_normal_pipeline.sh"
 
 
 untilarg=""
@@ -89,11 +91,13 @@ if [ ! -z $DRYRUN ]; then
     eval "$smk_cmd_base -npr -j $NJOBS"
 else
     if [ ! -z $LOCAL ]; then
-        echo "module load snakemake/5.24.1; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg"
-        eval "module load snakemake/5.24.1; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg"
+        echo "module load snakemake/5.24.1; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
+        eval "module load snakemake/5.24.1; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
     else
-        echo -e "#!/usr/bin/bash\n$smk_cmd_base -j $NJOBS --restart-times 1 --latency-wait 120 \n > snakemake.log 2>&1" > tumor_only_pipeline.sh
+        echo -e "#!/usr/bin/bash\n$smk_cmd_base -j $NJOBS --restart-times 1 --latency-wait 120 \n > snakemake.log 2>&1" > $SUBMIT_SCRIPT
         echo "Submitting pipeline to cluster... "
-        sbatch --cpus-per-task=2 --mem=12g --time 5-00:00:00 --partition ccr,norm --output submit.log --error submit.log tumor_only_pipeline.sh
+        primaryID=$(sbatch --cpus-per-task=2 --mem=12g --time 5-00:00:00 --partition ccr,norm --output submit.log --error submit.log $SUBMIT_SCRIPT)
+        echo "Primary Job ID: $primaryID"
+        
     fi
 fi
