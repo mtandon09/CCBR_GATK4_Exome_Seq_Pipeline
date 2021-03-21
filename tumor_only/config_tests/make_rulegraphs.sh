@@ -47,7 +47,7 @@ caller_str="'vardict','varscan'"
 ./run.sh --dryrun 1 \
          --sourcebam "$test_data_bam" \
          --callers "'mutect2'" \
-         --until merge_somatic_callers
+         --until somatic_merge_callers
 
 # Snakemake should find that no jobs need to be run
 #[+] Loading snakemake  5.24.1 

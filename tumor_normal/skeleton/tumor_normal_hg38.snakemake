@@ -680,7 +680,7 @@ rule somatic_collect_mafs:
   
 
 rule sobdetect_get:
-    input: ffpe_sample_list
+    input: 
     output: SOBDetector_jar=SOBDetector_JARFILE
     params: rname="get_sobdetector"
     shell:
@@ -691,6 +691,7 @@ rule sobdetect_get:
     
 rule sobdetect_pass1:
     input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+    # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
            bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
            SOBDetector_jar=SOBDetector_JARFILE
     output: pass1_vcf=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","pass1","{samples}.sobdetect.vcf"),

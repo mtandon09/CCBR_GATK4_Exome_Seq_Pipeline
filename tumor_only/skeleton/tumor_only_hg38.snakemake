@@ -736,7 +736,7 @@ rule somatic_merge_chrom:
 #             awk '{{gsub(/\y[W|K|Y|R|S|M]\y/,"N",$4); OFS = "\t"; print}}' | sed '/^$/d' > {output.vcf}
 #            """
            
-rule merge_somatic_callers:
+rule somatic_merge_callers:
     # input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.vcf"), vc_outdir=caller_list)
     # output: mergedvcf=os.path.join(output_somatic_snpindels,"merged_somatic_variants","vcf","{samples}.FINAL.vcf"),
     input: vcf=expand(os.path.join(output_somatic_snpindels,"{vc_outdir}_out","vcf","{{samples}}.FINAL.norm.vcf"), vc_outdir=caller_list)
@@ -779,7 +779,7 @@ rule collect_cohort_mafs:
   
 
 rule sobdetect_get:
-    input: ffpe_sample_list
+    input: 
     output: SOBDetector_jar=SOBDetector_JARFILE
     params: rname="get_sobdetector"
     shell:
@@ -789,7 +789,8 @@ rule sobdetect_get:
     
     
 rule sobdetect_pass1:
-    input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+    # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+    input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
            bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
            SOBDetector_jar=SOBDetector_JARFILE
     output: pass1_vcf=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","pass1","{samples}.sobdetect.vcf"),
@@ -826,7 +827,8 @@ rule sobdetect_cohort_params:
 
     
 rule sobdetect_pass2:
-  input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+  # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
+  input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
          bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
          SOBDetector_jar=SOBDetector_JARFILE,
          params_file=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","cohort_params.txt")
