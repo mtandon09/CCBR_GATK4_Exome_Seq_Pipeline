@@ -139,3 +139,4 @@ dmypy.json
 **/.snakemake*
 .venv
 .venv/*
+mouse/skeleton/Example_code
