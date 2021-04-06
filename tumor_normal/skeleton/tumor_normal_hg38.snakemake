@@ -78,8 +78,8 @@ def rename(filename):
         "_2.f(ast)?q.gz$": ".R2.fastq.gz",
         ####
         # Matches: *.bam if it's not preceded by '.recal' (i.e. match '.recal.bam' exactly)
-        "(?<!\.recal)\.bam$": ".recal.raw.bam",
-        "\.recal\.bam$": ".recal.raw.bam"
+        "(?<!\.recal)\.bam$": ".recal.bam",
+        "\.recal\.bam$": ".recal.bam"
     }
 
     if filename.endswith('.R1.fastq.gz') or filename.endswith('.R2.fastq.gz'):
@@ -184,12 +184,12 @@ if fqs_found:
     else:
         name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
 elif bams_found:
-    name_suffix=".recal.raw.bam"
+    name_suffix=".recal.bam"
     if not os.path.exists(output_bamdir):
         os.makedirs(output_bamdir) 
     if (len(os.listdir(output_bamdir))==0):
         bam_symlinks=_sym_safe_(bams_found, output_bamdir)
-    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.raw.bam'))
+    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
 else:
     raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
         FASTQ source path provided: {}
@@ -361,8 +361,8 @@ rule realign:
 
 rule gatk_recal:
       input:  os.path.join(output_bamdir,"{samples}.realign.bam")
-      output: bam=os.path.join(output_bamdir,"{samples}.recal.raw.bam"),
-              re=temp(os.path.join(output_bamdir,"{samples}_recal_raw_data.grp"))
+      output: bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
+              re=temp(os.path.join(output_bamdir,"{samples}_recal_data.grp"))
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tool_versions']['gatk4'],rname="recal"
       threads: 24
       shell:  """
@@ -400,8 +400,6 @@ rule RGChange:
             fi
             gatk AddOrReplaceReadGroups --INPUT {input.bam} --OUTPUT {output.bam} --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
 
-            """
-            
 rule bam_index:
       input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
       output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
@@ -418,7 +416,7 @@ rule split_bam:
               bai=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
       output: split_bam=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
               split_bam_idx=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bai")
-      params: ver_samtools=config['tool_versions']['samtools'],rname="split_bam"
+      params: ver_samtools=config['tool_versions']['samtools'],rname="index"
       shell:  """
               if [ ! -d "$(dirname {output.split_bam})" ]; then
                 mkdir -p "$(dirname {output.split_bam})"
