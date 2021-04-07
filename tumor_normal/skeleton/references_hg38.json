@@ -65,6 +65,19 @@
             "VEPRESOURCEBUNDLEPATH": "/data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources",
             "NCBI_BUILD": "GRCh38",
             "SPECIES": "homo_sapiens"
+        },
+        "SOMALIER":{
+            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/somalier/somalier.simg",
+            "ANCESTRY_DB": "/data/tandonm/pl_test_data/human/resources/somalier/1kg-somalier",
+            "SITES_VCF": "/data/tandonm/pl_test_data/human/resources/somalier/sites.hg38.vcf.gz",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        },
+        "VERIFYBAMID":{
+            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/verifybamid/verifybamid2_latest.sif",
+            "RESOURCE": "/data/tandonm/pl_test_data/human/resources/verifybamid/resource/",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
         }
     },
     "scripts": {
@@ -87,7 +100,9 @@
         "varscan": "2.4.3",
         "vcftools": "0.1.16",
         "Control-FREEC": "11.5",
-        "R": "3.6.1"
+        "R": "3.6.1",
+        "R_v4":"4.0.0",
+        "ver_singularity": "3.7.3"
     },
     "available_somatic_callers": ["mutect2","mutect","strelka","vardict","varscan"],
     "not_used": {

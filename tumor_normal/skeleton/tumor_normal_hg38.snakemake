@@ -288,6 +288,14 @@ rule all:
         expand(os.path.join(output_somatic_cnv,"freec_out","pass2","{samples}.recal.bam_CNVs.p.value.txt"), samples=cnv_sample_list),
         
         expand(os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.tumor.contamination.table"), samples=pairs_ids),
+        
+        expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
+        expand(os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry"), samples=samples),
+        os.path.join(output_germline_base,"predicted.pairs.tsv"),
+        os.path.join(output_germline_base,"predicted.genders.tsv"),
+        os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
+        os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+        
         # os.path.join(merge_outdir,"maf","merged_oncoplot.pdf"),
         # os.path.join("mutect_out","maf","mutect_oncoplot.pdf"),
         # os.path.join("mutect2_out","maf","mutect2_oncoplot.pdf"),
@@ -388,7 +396,7 @@ rule RGChange:
                     ID=$sample
                 fi
             fi
-            gatk AddOrReplaceReadGroups I={input.bam} O={output.bam} RGID=${{ID}} RGLB=${{LB}} RGPL=${{PL}} RGSM=${{ID}} RGPU=na
+            gatk AddOrReplaceReadGroups --INPUT {input.bam} --OUTPUT {output.bam} --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
 
             """
             
@@ -1082,6 +1090,153 @@ rule Gatk_SelectVariants:
           module load GATK/{params.ver_gatk}
           gatk SelectVariants -R {params.genome} --intervals {params.targets} --variant {input.vcf} --sample-name {params.Sname} --exclude-filtered --exclude-non-variants --output {output.vcf}
 	      """
+        
+rule somalier_extract:
+    input:  bam=(os.path.join(output_bamdir,"{samples}.recal.bam")),
+            bai=(os.path.join(output_bamdir,"{samples}.recal.bam.bai"))
+    output: somalierOut=os.path.join(output_germline_base,"somalier","{samples}.somalier")
+    params: ver_singularity=config['tool_versions']['ver_singularity'],ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],somalier_container=config['references']['SOMALIER']['CONTAINER'],
+            sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_extract"
+    # threads: 32
+    shell:  """
+            
+        module load singularity/{params.ver_singularity}    
+	    ANCESTRY_DB={params.ancestry_db}
+        CONTAINER={params.somalier_container}
+        GENOME_FASTA={params.genomeFasta}
+        SITES_VCF={params.sites_vcf}
+	    bam={input.bam}
+        OUT_DIR=$(dirname {output.somalierOut}) #Need to set this path somewhere
+        #mkdir -p $OUT_DIR
+        BAM_BASE=$(basename $bam)
+        SOMALIER_CMDS="date; echo 'Extracting sites';
+                    somalier extract -d /out/ --sites /refs/sites.vcf.gz -f /refs/genome.fa /mnt/$BAM_BASE;
+                    date;"
+            ## Run the commands in the image with binded paths to input/output files
+            singularity exec --bind $GENOME_FASTA:/refs/genome.fa \
+                                     --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \
+                                     --bind $SITES_VCF:/refs/sites.vcf.gz \
+                                     --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \
+                                     --bind $ANCESTRY_DB:/refs/ancestry/ \
+                                     --bind $OUT_DIR:/out \
+                                     --bind $bam:/mnt/$BAM_BASE \
+                                     --bind $bam.bai:/mnt/$BAM_BASE.bai \
+                                     $CONTAINER \
+                                     /bin/sh -c "$SOMALIER_CMDS"
+            """
+  
+rule somalier_relatedness:
+    input:
+        somalier=expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
+    output:
+        relatedness=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+        relatednessSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+        ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+    params: ver_singularity=config['tool_versions']['ver_singularity'],ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
+            sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_relatedness"
+    shell:  """
+        module load singularity/{params.ver_singularity}    
+	    ANCESTRY_DB={params.ancestry_db}
+        CONTAINER={params.container}
+        GENOME_FASTA={params.genomeFasta}
+        SITES_VCF={params.sites_vcf}
+        OUT_DIR=$(dirname {output.relatedness}) #Need to set this path somewhere
+        SOMALIER_CMDS="date;
+                    somalier relate -o /out/relatedness /out/*.somalier;
+                    somalier ancestry -o /out/ancestry --labels /refs/ancestry/ancestry-labels-1kg.tsv /refs/ancestry/*.somalier ++ /out/*.somalier;
+                    echo 'Done';
+                    date;"
+            ## Run the commands in the image with binded paths to input/output files
+            singularity exec --bind $GENOME_FASTA:/refs/genome.fa \
+                                     --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \
+                                     --bind $SITES_VCF:/refs/sites.vcf.gz \
+                                     --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \
+                                     --bind $ANCESTRY_DB:/refs/ancestry/ \
+                                     --bind $OUT_DIR:/out \
+                                     $CONTAINER \
+                                     /bin/sh -c "$SOMALIER_CMDS"
+            """
+
+rule genderPrediction:
+    input: 
+            somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+    output: finalFile=os.path.join(output_germline_base,"predicted.genders.tsv")
+    params: ver_R=config['tool_versions']['R_v4'],rname = "genderPrediction"
+    shell: """
+            module load R/{params.ver_R}
+            Rscript RScripts/predictGender.R {input.somalierSamples} {output.finalFile}
+    """
+    
+rule verifyBAMID:
+    input:  bam=(os.path.join(output_bamdir,"{samples}.recal.bam")),
+            bai=(os.path.join(output_bamdir,"{samples}.recal.bam.bai"))
+    output: result=os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry")
+    params: sample="{samples}",ver_singularity=config['tool_versions']['ver_singularity'],resource=config['references']['VERIFYBAMID']['RESOURCE'],container=config['references']['VERIFYBAMID']['CONTAINER'],
+            genomeFasta=config['references']['GENOME'],rname="pl:verifyBAM"
+    # threads: 32
+    shell:  """ 
+        module load singularity/{params.ver_singularity}
+	    bam={input.bam}
+        BAM_BASE=$(basename $bam)
+	    sampleName={params.sample}
+        OUT_DIR=$(dirname {output.result})
+        #mkdir -p $OUT_DIR
+	    BAM_DIR=$(dirname $bam)
+        GENOME_FASTA_DIR=$(dirname {params.genomeFasta})
+        GENOME_FASTA_NAME=$(basename {params.genomeFasta})
+        CONTAINER={params.container}
+        VerifyBAMIDPath={params.resource}
+        VERIFYBAMID_CMDS="date;
+                        VerifyBamID --NumPC 4 --SVDPrefix /VerifyBamID/resource/1000g.phase3.10k.b38.vcf.gz.dat --BamFile  /VerifyBamID/localDirectory/$BAM_BASE --Reference  /Reference/$GENOME_FASTA_NAME --Output /VerifyBamID/outputDir/$sampleName;
+                        date;"
+                                  ## Run the commands in the image with binded paths to input/output files
+                                  singularity exec --bind $BAM_DIR:/VerifyBamID/localDirectory \
+                                                   --bind $OUT_DIR:/VerifyBamID/outputDir \
+                                                   --bind $VerifyBAMIDPath:/VerifyBamID/resource/ \
+                                                   --bind $bam:/mnt/bam \
+                                                   --bind $GENOME_FASTA_DIR:/Reference/ \
+                                                   $CONTAINER \
+                                                   /bin/sh -c "$VERIFYBAMID_CMDS"
+            
+            """
+        
+rule verifyBAMID_results_merge:
+    input:
+        expand(os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry"), samples=samples),
+    output:
+        list = os.path.join(output_germline_base,"verifyBAMID","allAncestorySamples.txt"),
+        finalPairs = os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
+    params:
+        ver_R=config['tool_versions']['R_v4'],rname = "merge_verifyBAMID"
+    shell:
+        """
+        module load R/{params.ver_R}
+        ls -d $(dirname "{output.list}")/*.Ancestry > "{output.list}"
+        ##Run the RScript to create the pair file
+        Rscript RScripts/combineVerifyBAMIDResults.R {output.list} {output.finalPairs}
+        """
+        
+rule combineSampleCompareResults:
+    input: 
+           somalier=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+           verifyBAM=os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
+    output: finalFile=os.path.join(output_germline_base,"predicted.pairs.tsv")
+    params: ver_R=config['tool_versions']['R_v4'],rname = "combineSampleCompareResults"
+    shell: """
+            module load R/{params.ver_R}
+            Rscript RScripts/combineAllSampleCompareResults.R {input.somalier} {input.verifyBAM} {output.finalFile}
+    """
+    
+rule plotAncestry:
+    input: ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+           predictedPairs=os.path.join(output_germline_base,"predicted.pairs.tsv")
+    output: ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
+            pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+    params: ver_R=config['tool_versions']['R_v4'],rname = "plotAncestry"
+    shell: """
+            module load R/{params.ver_R}
+            Rscript RScripts/sampleCompareAncestoryPlots.R {input.ancestry} {input.predictedPairs} {output.ancestoryPlot} {output.pairAncestoryHist}
+    """
 
 # rule hla:
 #     input: 
