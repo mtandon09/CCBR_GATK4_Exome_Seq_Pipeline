@@ -78,8 +78,8 @@ def rename(filename):
         "_2.f(ast)?q.gz$": ".R2.fastq.gz",
         ####
         # Matches: *.bam if it's not preceded by '.recal' (i.e. match '.recal.bam' exactly)
-        "(?<!\.recal)\.bam$": ".recal.bam",
-        "\.recal\.bam$": ".recal.bam"
+        "(?<!\.recal)\.bam$": ".recal.raw.bam",
+        "\.recal\.bam$": ".recal.raw.bam"
     }
 
     if filename.endswith('.R1.fastq.gz') or filename.endswith('.R2.fastq.gz'):
@@ -183,12 +183,12 @@ if fqs_found:
     else:
         name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
 elif bams_found:
-    name_suffix=".recal.bam"
+    name_suffix=".recal.raw.bam"
     if not os.path.exists(output_bamdir):
         os.makedirs(output_bamdir) 
     if (len(os.listdir(output_bamdir))==0):
         bam_symlinks=_sym_safe_(bams_found, output_bamdir)
-    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
+    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.raw.bam'))
 else:
     raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
         FASTQ source path provided: {}
@@ -348,8 +348,8 @@ rule realign:
 
 rule gatk_recal:
       input:  os.path.join(output_bamdir,"{samples}.realign.bam")
-      output: bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
-              re=temp(os.path.join(output_bamdir,"{samples}_recal_data.grp"))
+      output: bam=os.path.join(output_bamdir,"{samples}.recal.raw.bam"),
+              re=temp(os.path.join(output_bamdir,"{samples}_recal_raw_data.grp"))
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tool_versions']['gatk4'],rname="recal"
       threads: 24
       shell:  """
@@ -357,7 +357,38 @@ rule gatk_recal:
               gatk --java-options '-Xmx48g' BaseRecalibrator --input {input} --reference {params.genome} {params.knowns} --output {output.re}
               gatk --java-options '-Xmx48g' ApplyBQSR --reference {params.genome} --input {input} --bqsr-recal-file {output.re} --output {output.bam} --use-jdk-inflater --use-jdk-deflater
               """
+rule RGChange:
+    input:  bam=os.path.join(output_bamdir,"{samples}.recal.raw.bam")
+    output: bam=os.path.join(output_bamdir,"{samples}.recal.bam")
+    params: sample = "{samples}",ver_samtools=config['tool_versions']['samtools'],ver_gatk=config['tool_versions']['gatk4'],rname="RGChange"
+    threads: 8
+    shell:  """
+            module load samtools/{params.ver_samtools}
+            module load GATK/{params.ver_gatk}
+            HEADER=`samtools view -H {input.bam} | grep ^@RG`
+            sample={params.sample}
 
+            ##Check if there is no header or any of the info
+            if [[ "$HEADER" == "" ]]; then
+                ID=$sample
+                PL="ILLUMINA"
+                LB="na"
+            else
+                t=(${{HEADER//\t/ }})
+                echo ${{t[1]}}
+                ID=`printf '%s\n' "${{t[@]}}" | grep -P '^ID' | cut -d":" -f2` #(${{t[1]//:/ }})
+                PL=`printf '%s\n' "${{t[@]}}" | grep -P '^PL' | cut -d":" -f2` #(${{t[3]//:/ }})
+                LB=`printf '%s\n' "${{t[@]}}" | grep -P '^LB' | cut -d":" -f2` #(${{t[2]//:/ }})
+                if [[ "$ID" == "$sample" ]]; then
+                    echo "The header of the BAM file is correct"
+                else
+                    ID=$sample
+                fi
+            fi
+            gatk AddOrReplaceReadGroups I={input.bam} O={output.bam} RGID=${{ID}} RGLB=${{LB}} RGPL=${{PL}} RGSM=${{ID}} RGPU=na
+
+            """
+            
 rule bam_index:
       input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
       output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
@@ -374,7 +405,7 @@ rule split_bam:
               bai=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
       output: split_bam=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
               split_bam_idx=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bai")
-      params: ver_samtools=config['tool_versions']['samtools'],rname="index"
+      params: ver_samtools=config['tool_versions']['samtools'],rname="split_bam"
       shell:  """
               if [ ! -d "$(dirname {output.split_bam})" ]; then
                 mkdir -p "$(dirname {output.split_bam})"
@@ -396,7 +427,7 @@ rule gatk_mutect2:
             chrom="{chroms}",
             genome = config['references']['GENOME'],
             pon=config['references']['PON'],
-            germsource=config['references']['GNOMAD'],
+            #germsource=config['references']['GNOMAD'],
             ver_gatk=config['tool_versions']['gatk4'],
             rname="mutect2"
     threads: 2
@@ -405,7 +436,8 @@ rule gatk_mutect2:
                mkdir -p "$(dirname {output.vcf})"
            fi
            module load GATK/{params.ver_gatk}
-           gatk Mutect2 -R {params.genome} -I {input.tumor} -I {input.normal} -normal {params.normalsample} --panel-of-normals {params.pon} --germline-resource {params.germsource} -L {params.chrom} -O {output.vcf} --f1r2-tar-gz {output.read_orientation_file} --independent-mates
+           gatk Mutect2 -R {params.genome} -I {input.tumor} -I {input.normal} -normal {params.normalsample} --panel-of-normals {params.pon} -L {params.chrom} -O {output.vcf} --f1r2-tar-gz {output.read_orientation_file} --independent-mates
+
            """
 
 rule LearnReadOrientationModel:
@@ -428,7 +460,9 @@ rule pileup_tumor:
            intervals=intervals_file
     output: tumor_summary=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_tumor.pileup.table"),
             normal_summary=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_normal.pileup.table")
-    params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
+   # params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
+    params: genome=config['references']['GENOME'],germsource=config['references']['DBSNP'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
+ 
     shell: """
            module load GATK/{params.ver_gatk}
            gatk --java-options '-Xmx48g' GetPileupSummaries -I {input.tumor} -V {params.germsource} -L {input.intervals} -O {output.tumor_summary} & \
@@ -530,13 +564,16 @@ rule mutect:
        output: vcf=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.vcf"),
                stats=os.path.join(output_somatic_snpindels,"mutect_out","chrom_split","{samples}.{chroms}.stats.out"),
                # final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
-       params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",pon=config['references']['PON'],genome=config['references']['GENOME'],cosmic=config['references']['COSMIC'],dbsnp=config['references']['DBSNP'],rname="mutect"
+#       params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",pon=config['references']['PON'],genome=config['references']['GENOME'],cosmic=config['references']['COSMIC'],dbsnp=config['references']['DBSNP'],rname="mutect"
+       params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",pon=config['references']['PON'],genome=config['references']['GENOME'],dbsnp=config['references']['DBSNP'],rname="mutect"
+
        shell:  """
                myoutdir="$(dirname {output.vcf})"
                if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
                
                module load muTect/1.1.7
-               muTect --analysis_type MuTect --reference_sequence {params.genome} --normal_panel {params.pon} --vcf {output.vcf} --cosmic {params.cosmic} --dbsnp {params.dbsnp} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:normal {input.normal} --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
+               muTect --analysis_type MuTect --reference_sequence {params.genome} --normal_panel {params.pon} --vcf {output.vcf} --dbsnp {params.dbsnp} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:normal {input.normal} --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
+
                """
 
 rule mutect_filter:
@@ -659,7 +696,9 @@ rule somatic_mafs:
   input: filtered_vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
          vcf2maf_script=VCF2MAF_WRAPPER
   output: maf=os.path.join(output_somatic_snpindels,"{vc_outdir}","maf","{samples}.maf")
-  params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
+ # params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
+  params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],rname="pl:vcf2maf"
+
   shell:
     """
     echo "Converting to MAF..."
@@ -804,7 +843,8 @@ rule ffpefilter_mafs:
   input: filtered_vcf=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"),
          vcf2maf_script=VCF2MAF_WRAPPER
   output: maf=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","maf","{samples}.maf")
-  params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
+  #params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
+  params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['MAF_GENOME'],rname="pl:vcf2maf"
   shell:
     """
     date
