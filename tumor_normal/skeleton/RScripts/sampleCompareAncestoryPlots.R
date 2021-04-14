@@ -19,9 +19,9 @@ samples<-unique(c(pairs$Sample1,pairs$Sample2.x))
 mapping<-list("EUR"="European","EAS"="East Asian","AMR"="American","SAS"="South Asian","AFR"="African")
 t$predAncestry<-unlist(mapping[t$predicted_ancestry])
 t$color<-t$predAncestry
-t$color[t$G.sample_id %in% samples]<-"UserSamples"
+t$color[t$X.sample_id %in% samples]<-"UserSamples"
 p <- plot_ly(t, x = ~PC1, y = ~PC2, color = as.factor(t$color),colors = c('#0C4B8E','#FF0000','#f1a340','#43a2ca','#8856a7','grey'),
-  hoverinfo = 'text',text = ~paste('</br> Sample Id:',t$G.sample_id,'</br> Ancestory:', t$predAncestry), type = 'scatter', mode = 'markers') %>%
+  hoverinfo = 'text',text = ~paste('</br> Sample Id:',t$X.sample_id,'</br> Ancestory:', t$predAncestry), type = 'scatter', mode = 'markers') %>%
   #add_trace(marker = list(size = 12)) %>%
   layout(scene = list(xaxis = list(title = 'PC1'),yaxis = list(title = 'PC2')))
 htmlwidgets::saveWidget(p,user.input.3)
