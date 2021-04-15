@@ -12,9 +12,9 @@ user.input.4=args[4]
 
 t<-read.table(user.input.1,sep = "\t",header = T,comment.char = "")
 pairs<-read.table(user.input.2,sep = "\t",header = T)
-pairs<-pairs %>% mutate(key = paste0(pmin(Sample1, Sample2.x), pmax(Sample1, Sample2.x), sep = ""))
+pairs<-pairs %>% mutate(key = paste0(pmin(Sample1, Sample2), pmax(Sample1, Sample2), sep = ""))
 pairs<-pairs[duplicated(pairs[,"key"]),]
-samples<-unique(c(pairs$Sample1,pairs$Sample2.x))
+samples<-unique(c(pairs$Sample1,pairs$Sample2))
 
 mapping<-list("EUR"="European","EAS"="East Asian","AMR"="American","SAS"="South Asian","AFR"="African")
 t$predAncestry<-unlist(mapping[t$predicted_ancestry])
@@ -29,8 +29,8 @@ htmlwidgets::saveWidget(p,user.input.3)
 samplesAncestory<-t[t$X.sample_id %in% samples,c(1,4:8)]
 mapping<-list("EUR_prob"="European","EAS_prob"="East Asian","AMR_prob"="American","SAS_prob"="South Asian","AFR_prob"="African")
 colnames(samplesAncestory)<-c(colnames(samplesAncestory)[1],unlist(mapping[colnames(samplesAncestory)[2:6]]))
-d<-data.frame(rbind(cbind(pairs$Sample1,c(rep("Sample1",length(pairs$Sample1))),paste0(pairs$Sample1,"\nvs\n",pairs$Sample2.x)),
-                    cbind(pairs$Sample2.x,c(rep("Sample2",length(pairs$Sample2.x))),paste0(pairs$Sample1,"\nvs\n",pairs$Sample2.x))))
+d<-data.frame(rbind(cbind(pairs$Sample1,c(rep("Sample1",length(pairs$Sample1))),paste0(pairs$Sample1,"\nvs\n",pairs$Sample2)),
+                    cbind(pairs$Sample2,c(rep("Sample2",length(pairs$Sample2))),paste0(pairs$Sample1,"\nvs\n",pairs$Sample2))))
 mDF<-merge(x=d,y=samplesAncestory,by.x="X1",by.y="X.sample_id",all.x=TRUE,all.y=FALSE)
 gData<-mDF %>% tidyr::pivot_longer(c(4:8), names_to = "Ancestory", values_to = "Somalier.Score")
 g<-ggplot(gData, aes(fill=Ancestory, y=Somalier.Score, x=X2)) +
