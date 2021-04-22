@@ -575,7 +575,7 @@ rule mutect_filter:
     output: final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
             # filtered=temp(os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.filtered.vcf")),
             # samplesfile=temp(os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf.samples")),
-    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
+    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="mutect_filter"
     shell: """
            module load GATK/{params.ver_gatk}
            gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.final}
