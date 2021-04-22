@@ -302,21 +302,21 @@ rule trimmomatic:
             four=temp(os.path.join(output_fqdir,"{samples}.R2.trimmed.unpair.fastq.gz")),
             err=os.path.join(output_fqdir,"{samples}_run_trimmomatic.err")
     params: adapterfile=config['references']['trimmomatic.adapters'],ver=config['tool_versions']['trimmomatic'],rname="pl:trimmomatic"
-    # threads: 32
+    threads: 24
     shell:  """
             module load trimmomatic/{params.ver};
             myoutdir="$(dirname {output.one})"
             if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
             
             trimmomatic PE -threads $((SLURM_CPUS_PER_TASK-1)) -phred33 {input.r1} {input.r2} {output.one} {output.two} {output.three} {output.four} ILLUMINACLIP:{params.adapterfile}:3:30:10 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:20 MINLEN:20 2> {output.err}
-            
+
             """
 
 rule bwa_mem:
     input:  os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz"),
             os.path.join(output_fqdir,"{samples}.R2.trimmed.fastq.gz")
     output: temp(os.path.join(output_bamdir,"{samples}.raw_map.bam"))
-    params: genome=config['references']['GENOME'],sample = "{samples}",ver_samtools=config['tool_versions']['samtools'],ver_bwa=config['tool_versions']['bwa'],rname="pl:bwamem"
+    params: genome=config['references']['BWAGENOME'],sample = "{samples}",ver_samtools=config['tool_versions']['samtools'],ver_bwa=config['tool_versions']['bwa'],rname="pl:bwamem"
     # threads: 32
     shell:  """
             module load samtools/{params.ver_samtools}
@@ -334,6 +334,7 @@ rule raw_index:
               module load samtools/{params.ver_samtools}
               samtools index -@ 2 {input.bam} {output.bai}
               """
+              
 rule realign:
       input:  bam=os.path.join(output_bamdir,"{samples}.raw_map.bam"),
               bai=os.path.join(output_bamdir,"{samples}.raw_map.bai"),
@@ -357,6 +358,7 @@ rule gatk_recal:
               gatk --java-options '-Xmx48g' BaseRecalibrator --input {input} --reference {params.genome} {params.knowns} --output {output.re}
               gatk --java-options '-Xmx48g' ApplyBQSR --reference {params.genome} --input {input} --bqsr-recal-file {output.re} --output {output.bam} --use-jdk-inflater --use-jdk-deflater
               """
+
 rule RGChange:
     input:  bam=os.path.join(output_bamdir,"{samples}.recal.raw.bam")
     output: bam=os.path.join(output_bamdir,"{samples}.recal.bam")
@@ -385,7 +387,7 @@ rule RGChange:
                     ID=$sample
                 fi
             fi
-            gatk AddOrReplaceReadGroups I={input.bam} O={output.bam} RGID=${{ID}} RGLB=${{LB}} RGPL=${{PL}} RGSM=${{ID}} RGPU=na
+            gatk AddOrReplaceReadGroups -I {input.bam} -O {output.bam} --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
 
             """
             
@@ -461,7 +463,7 @@ rule pileup_tumor:
     output: tumor_summary=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_tumor.pileup.table"),
             normal_summary=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_normal.pileup.table")
    # params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
-    params: genome=config['references']['GENOME'],germsource=config['references']['DBSNP'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
+    params: genome=config['references']['GENOME'],germsource=config['references']['KNOWNSNPS'],ver_gatk=config['tool_versions']['gatk4'],rname="pileup"
  
     shell: """
            module load GATK/{params.ver_gatk}
@@ -572,7 +574,8 @@ rule mutect:
                if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
                
                module load muTect/1.1.7
-               muTect --analysis_type MuTect --reference_sequence {params.genome} --normal_panel {params.pon} --vcf {output.vcf} --dbsnp {params.dbsnp} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:normal {input.normal} --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
+              # muTect --analysis_type MuTect --reference_sequence {params.genome} --normal_panel {params.pon} --vcf {output.vcf} --dbsnp {params.dbsnp} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:normal {input.normal} --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
+               muTect --analysis_type MuTect --reference_sequence {params.genome} --vcf {output.vcf} --dbsnp {params.dbsnp} --disable_auto_index_creation_and_locking_when_reading_rods --input_file:normal {input.normal} --input_file:tumor {input.tumor} --out {output.stats} -rf BadCigar
 
                """
 
@@ -581,7 +584,7 @@ rule mutect_filter:
     output: final=os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf"),
             # filtered=temp(os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.filtered.vcf")),
             # samplesfile=temp(os.path.join(output_somatic_snpindels,"mutect_out","vcf","{samples}.FINAL.vcf.samples")),
-    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
+    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],ver_gatk=config['tool_versions']['gatk4'],rname="mutect_filter"
     shell: """
            module load GATK/{params.ver_gatk}
            gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.final}
@@ -627,8 +630,8 @@ rule varscan:
                fi
                module load VarScan/{params.ver_varscan}
                
-               tumor_purity=$( echo "1-$(tail -n -1 {input.tumor_summary} | cut -f2 )" | bc -l)
-               normal_purity=$( echo "1-$(tail -n -1 {input.normal_summary} | cut -f2 )" | bc -l)
+               tumor_purity=$( echo "1-$(printf '%.6f' $(tail -n -1 {input.tumor_summary} | cut -f2 ))" | bc -l)
+               normal_purity=$( echo "1-$(printf '%.6f' $(tail -n -1 {input.normal_summary} | cut -f2 ))" | bc -l)
                
                varscan_opts="--strand-filter 1 --min-var-freq 0.01 --min-avg-qual 30 --somatic-p-value 0.05 --output-vcf 1 --normal-purity $normal_purity --tumor-purity $tumor_purity"
                
@@ -646,7 +649,7 @@ rule varscan_filter:
     output: filtered=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.filtered.vcf")),
             samplesfile=temp(os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf.samples")),
             final=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.FINAL.vcf"),
-    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_gatk=config['tool_versions']['gatk4'],rname="strelka_filter"
+    params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],pon=config['references']['PON'],basedir=BASEDIR,ver_gatk=config['tool_versions']['gatk4'],rname="varscan_filter"
     shell: """
            module load GATK/{params.ver_gatk}
            gatk SelectVariants -R {params.genome} --variant {input.vcf} --discordance {params.pon} --exclude-filtered --output {output.filtered}

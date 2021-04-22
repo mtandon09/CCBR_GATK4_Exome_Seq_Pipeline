@@ -1,0 +1,61 @@
+###Test download and run the
+sinteractive --mem=32g --cpus-per-task=4
+module load sratoolkit
+fasterq-dump --split-files SRR7358302 #D0458_Ta-MMTV-Tg(LINK-A)
+fasterq-dump --split-files SRR7358301-#D0458_Tm-Tg(LINK-A)
+
+MMTV is tumor
+https://www.nature.com/articles/s41590-019-0400-7
+
+##Create GZIP files from the samples
+seqtk sample -s3187 SRR7358301_1.fastq 1000000 |gzip > S1_Normal.R1.fastq.gz
+seqtk sample -s3187 SRR7358301_2.fastq 1000000 |gzip > S1_Normal.R2.fastq.gz
+seqtk sample -s3187 SRR7358302_1.fastq 1000000 |gzip > S1_Tumor.R1.fastq.gz
+seqtk sample -s3187 SRR7358302_2.fastq 1000000 |gzip > S1_Tumor.R2.fastq.gz
+
+
+
+##Upload the samples
+
+##Run the pipeline
+module load snakemake/5.24.1
+
+
+###DRY Run
+snakemake --stats snakemake.stats --restart-times 0 --rerun-incomplete --cluster "sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --parsable \
+--job-name={params.rname} -e slurmfiles/slurm-%j_{params.rname}.out -o slurmfiles/slurm-%j_{params.rname}.out" --cluster-config cluster.json --keep-going \
+--snakefile tumor_normal_mm10.snakemake   --config "input_params={'FASTQ_SOURCE':'/scratch/nousome/mm10/mouse/fastq','PAIRS_FILE':'/scratch/nousome/mm10/mouse/pairs.tsv','BASE_OUTDIR':'/scratch/nousome/mm10/run'}" -j 500 \
+-n -p -r
+
+
+##Real run
+snakemake --stats snakemake.stats --restart-times 0 --rerun-incomplete --cluster "sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --parsable \
+--job-name={params.rname} -e slurm-%j_{params.rname}.out -o slurm-%j_{params.rname}.out" --cluster-config cluster.json --keep-going \
+--snakefile tumor_normal_mm10.snakemake   --config "input_params={'FASTQ_SOURCE':'/scratch/nousome/mm10/mouse/fastq','PAIRS_FILE':'/scratch/nousome/mm10/mouse/pairs.tsv','BASE_OUTDIR':'/scratch/nousome/mm10/run'}" -j 500 \
+--cluster-status ./status.py -p -r
+
+
+snakemake --stats snakemake.stats --restart-times 0 --rerun-incomplete --cluster "sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --parsable \
+--job-name={params.rname} -e slurm-%j_{params.rname}.out -o slurm-%j_{params.rname}.out" --cluster-config cluster.json  --keep-going \
+--snakefile tumor_normal_mm10.snakemake   --config "input_params={'FASTQ_SOURCE':'/scratch/nousome/mm10/mouse/fastq','PAIRS_FILE':'/scratch/nousome/mm10/mouse/pairs.tsv','BASE_OUTDIR':'/scratch/nousome/mm10/run'}" -j 500 \
+--cluster-status ./status.py -p -r --latency-wait 3000
+
+
+###Run
+test_data_fq="/data/tandonm/pl_test_data/human/fastq"
+pairs_file="pairs.tsv"
+
+## See if the dry-run works
+./run.sh --dryrun 1 \
+         --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
+         --sourcefq /scratch/nousome/mm10/mouse/fastq
+
+./run.sh --dryrun 1 \
+         --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
+         --sourcefq /scratch/nousome/mm10/mouse/fastq 
+
+
+## Without the --dryrun argument, the job will be submitted
+./run.sh \
+         --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
+         --sourcefq /scratch/nousome/mm10/mouse/fastq
