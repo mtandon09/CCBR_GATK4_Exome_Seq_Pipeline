@@ -139,9 +139,7 @@ dmypy.json
 **/.snakemake*
 .venv
 .venv/*
-mouse/skeleton/Example_code
-mouse/skeleton/tn_test1.snakemake
-mouse/skeleton/tn_test1.snakemake
+
 mouse/tumor_normal/skeleton/cluster.json
 .vscode/launch.json
 mouse/tumor_normal/skeleton/Example_code

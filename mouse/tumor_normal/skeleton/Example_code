@@ -66,4 +66,3 @@ pairs_file="pairs.tsv"
          --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
          --sourcefq /scratch/nousome/mm10/mouse/fastq 
 
-         st
