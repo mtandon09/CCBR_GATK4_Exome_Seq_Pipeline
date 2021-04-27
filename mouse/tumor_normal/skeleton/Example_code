@@ -48,14 +48,20 @@ pairs_file="pairs.tsv"
 ## See if the dry-run works
 ./run.sh --dryrun 1 \
          --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
-         --sourcefq /scratch/nousome/mm10/mouse/fastq
-
-./run.sh --dryrun 1 \
-         --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
          --sourcefq /scratch/nousome/mm10/mouse/fastq 
+
+
 
 
 ## Without the --dryrun argument, the job will be submitted
 ./run.sh \
          --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
          --sourcefq /scratch/nousome/mm10/mouse/fastq
+
+##Try the SOBDetector
+./run.sh \
+         --dryrun 1 \
+         --ffpe t \
+         --cnv t \
+         --pairs /scratch/nousome/mm10/mouse/pairs.tsv \
+         --sourcefq /scratch/nousome/mm10/mouse/fastq 
