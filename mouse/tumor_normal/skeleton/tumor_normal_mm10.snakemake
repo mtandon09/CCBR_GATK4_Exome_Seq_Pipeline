@@ -234,6 +234,8 @@ if (len(caller_list) > 1):
 
 
 VCF2MAF_WRAPPER=config['scripts']['vcf2maf_wrapper']
+MAFDASH_SINGULARITY=config['scripts']['mafdash_singularity']
+
 SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter","sobdetector")
 SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile","SOBDetector_v1.0.2.jar")
 
@@ -275,7 +277,8 @@ rule all:
         
         expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=somatic_callers_dirs),
         # expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), samplespairs_ids, vc_outdir=somatic_callers),
-        
+        expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","mafdash_results.html"), vc_outdir=somatic_callers_dirs),
+
         expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"), samples=ffpe_sample_list, vc_outdir=ffpe_caller_list),
         expand(os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=ffpe_caller_list),
         # expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"), samplespairs_ids, vc_outdir=somatic_callers_dirs),
@@ -720,6 +723,20 @@ rule somatic_collect_mafs:
     date
   """
   
+rule mafdash:
+  input: maf=os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf")
+  output: html=os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","mafdash_results.html")
+
+  params: outpath=os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary"),ver_singularity=config['tool_versions']['singularity'],mafdash_singularity=MAFDASH_SINGULARITY,rname="mafdash"
+  shell:
+    """
+    module load singularity/{params.ver_singularity}
+    echo "Converting to MAFdash HTML results..."
+
+    singularity exec -B  {params.outpath}:/data {params.mafdash_singularity} Rscript /maf/program/maf.R /data/all_somatic_variants.maf /data/mafdash_results.html
+    touch {output.html}
+    date
+    """
 
 rule sobdetect_get:
     input: 

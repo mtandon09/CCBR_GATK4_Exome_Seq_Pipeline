@@ -59,7 +59,10 @@
         "freec_p2_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass2_exome_tn_config.pl",
         "freec_significance": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/assess_significance.R",
         "freec_plot": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/makeGraph.R",
-        "run_sequenza": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/run_sequenza.R"
+        "run_sequenza": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/run_sequenza.R",
+        "mafdash_dir":"/scratch/nousome/mafdash/",
+        "mafdash_singularity":"/scratch/nousome/mafdash/mafD.sif"
+
     },
     "tool_versions": {
         "trimmomatic": "0.39",
@@ -73,7 +76,8 @@
         "vcftools": "0.1.16",
         "Control-FREEC": "11.5",
         "R": "3.6.1",
-        "strelka":"2.9.0"
+        "strelka":"2.9.0",
+        "singularity":"3.7.3"
     },
     "available_somatic_callers": ["mutect2","mutect","vardict","varscan","strelka"],
     "not_used": {

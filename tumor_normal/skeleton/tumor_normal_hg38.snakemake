@@ -274,6 +274,8 @@ rule all:
         # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=pairs_ids, vc_outdir=somatic_callers),
         
         expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=somatic_callers_dirs),
+        expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","mafdash_results.html"), vc_outdir=somatic_callers_dirs),
+
         # expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), samplespairs_ids, vc_outdir=somatic_callers),
         
         expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"), samples=ffpe_sample_list, vc_outdir=ffpe_caller_list),
