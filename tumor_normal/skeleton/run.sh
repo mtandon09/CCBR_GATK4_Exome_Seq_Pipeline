@@ -43,7 +43,7 @@ else
     if [ ! -z $TARGETS ]; then TARGETS="'EXOME_TARGETS':'$TARGETS'"; fi
     if [ ! -z $FFPE ]; then FFPE="'FFPE_FILTER':'$FFPE'"; fi
     if [ ! -z $CNV ]; then CNV="'CNV_CALLING':'$CNV'"; fi
-    if [ ! -z $OUTDIR ]; then CNV="'BASE_OUTDIR':'$OUTDIR'"; fi
+    if [ ! -z $OUTDIR ]; then OUTDIR="'BASE_OUTDIR':'$OUTDIR'"; fi
     inputparams=($SOURCEFQ $SOURCEBAM $PAIRS $CALLERS $TARGETS $FFPE $CNV)
     for i in ${inputparams[@]}; do configarg="$configarg,$i"; done
     if [ ! -z $configarg ]; then configarg="--config \"input_params={$(echo -e $configarg | sed -e 's/^,//')}\""; fi
