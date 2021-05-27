@@ -902,7 +902,7 @@ rule sequenza:
   output: fit=os.path.join(output_somatic_cnv,"sequenza_out","{samples}_alternative_solutions.txt"),
   params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",
           gc=config['references']['SEQUENZAGC'],
-          run_script=config['scripts']['freec_p1_config'],
+          run_script=config['scripts']['run_sequenza'],
           rname="sequenza"
   threads: 8
   shell: """
