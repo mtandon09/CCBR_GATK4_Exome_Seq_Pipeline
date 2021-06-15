@@ -1,0 +1,92 @@
+{
+    "input_params": {
+      "FASTQ_SOURCE": "",
+      "BAM_SOURCE": "",
+      "PAIRS_FILE": "",
+      "VARIANT_CALLERS": ["mutect2","mutect","strelka","vardict","varscan"],
+      "BASE_OUTDIR": "tn_out_1",
+      "OTHER_SOMATIC_VCFS": {},
+      "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/SureSelect_mm10.bed",
+      "GERMLINE": "false",
+      "FFPE_FILTER": "false",
+      "CNV_CALLING": "false"
+    },
+    "output_params": {
+      "FASTQ": "fastqs_out",
+      "BAM": "bams_out",
+      "MERGED_SOMATIC_OUTDIR": "merged_somatic_variants",
+      "GERMLINE_VCF": {
+        "GATK": "germline_joint_genotyping"
+      }
+    },
+    "references": {
+        "fastqc_adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/fastqc.adapters",
+        "trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
+        "SNPEFF_GENOME": "GRCm38.86",
+        "SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
+        "BWAGENOME": "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/BWAIndex/genome.fa",
+        "GENOME": "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa",
+        "GENOMEDICT": "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.dict",
+        "DBSNP": "/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_allstrains_dbSNP142.vcf.gz",
+        "KNOWNANCESTRY": "/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_known_snps.vcf.gz",
+        "KNOWNINDELS": "-known /data/CCBR_Pipeliner/db/PipeDB/lib/mm10_known_indels.vcf.gz",
+        "KNOWNRECAL": "-known-sites /data/CCBR_Pipeliner/db/PipeDB/lib/mm10_known_indels.vcf.gz -known-sites /data/CCBR_Pipeliner/db/PipeDB/lib/mm10_known_snps.vcf.gz",
+        "KNOWNSNPS":"/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_knownSNPs_sites.vcf.gz",
+        #"1000GSNP": "/fdb/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz",
+       # "HAPMAP": "/fdb/GATK_resource_bundle/hg38bundle/hapmap_3.3.hg38.vcf.gz",
+       #"OMNI": "/fdb/GATK_resource_bundle/hg38bundle/1000G_omni2.5.hg38.vcf.gz",
+        #"MILLS": "/fdb/GATK_resource_bundle/hg38bundle/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
+       # "AXIOM": "/fdb/GATK_resource_bundle/hg38bundle/Axiom_Exome_Plus.genotypes.all_populations.poly.hg38.vcf.gz",
+        "PON": "/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_dbSNP_allStrains_compSet.vcf.gz",
+        
+      #  "COSMIC": "/data/CCBR_Pipeliner/db/PipeDB/lib/COSMIC_82_hg38.vcf.gz",
+     #   "CONTAMINATION": "/fdb/GATK_resource_bundle/hg38bundle/ExomeContam.hg38.vcf.gz",
+      #  "GNOMAD": "/data/tandonm/pl_test_data/human/other/somatic-hg38-af-only-gnomad.hg38.vcf.gz",
+        "FREECLENGTHS": "fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fai",
+        "FREECCHROMS": "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/Chromosomes",
+        "FREECPILEUP": "/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_allstrains_dbSNP142.vcf.gz",
+        "FREECSNPS": "/data/CCBR_Pipeliner/db/PipeDB/lib/mm10_allstrains_dbSNP142.vcf.gz",
+        "SEQUENZAGC": "/data/CCBR_Pipeliner/db/PipeDB/lib/hg38_gc50Base.txt.gz",
+        "ADMIXTUREKEY": "/data/CCBR_Pipeliner/db/PipeDB/lib/mouse_genomes_strain_key.txt",
+        "ADMIXTUREREFS": "39",
+      #  "MAF_FILTERVCF": "/data/CCBR_Pipeliner/db/PipeDB/lib/ExAC_nonTCGA.r0.3.1.sites.vep.GRCh38.vcf.gz",
+        "MAF_GENOME": "mm10",
+        "ORGANISM": "MOUSE"
+    },
+    "scripts": {
+        "vcf2maf_wrapper": "/data/tandonm/pl_test_data/human/other/vcf2maf_wrapper.bash",
+        "freec_p1_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass1_exome_tn_config.pl",
+        "freec_p2_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass2_exome_tn_config.pl",
+        "freec_significance": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/assess_significance.R",
+        "freec_plot": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/makeGraph.R",
+        "run_sequenza": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/run_sequenza.R",
+        "mafdash_dir":"/scratch/nousome/mafdash/",
+        "mafdash_singularity":"/scratch/nousome/mafdash/mafD.sif"
+
+    },
+    "tool_versions": {
+        "trimmomatic": "0.39",
+        "samtools": "1.8",
+        "bcftools": "1.9",
+        "bwa": "0.7.17",
+        "gatk3": "3.8-1",
+        "gatk4": "4.1.4.1",
+        "mutect": "1.1.7",
+        "varscan": "2.4.3",
+        "vcftools": "0.1.16",
+        "Control-FREEC": "11.5",
+        "R": "3.6.1",
+        "strelka":"2.9.0",
+        "singularity":"3.7.3"
+    },
+    "available_somatic_callers": ["mutect2","mutect","vardict","varscan","strelka"],
+    "not_used": {
+        "1000G": "/data/GRIS_NCBR/resources/ALL.GRCh38_sites.nuclear.20170504.vcf.gz",
+        "EXAC": "/data/GRIS_NCBR/resources/exacv1_grch38_release1_ExAC.r1.sites.liftover.GRCh38.vcf.gz",
+        "SMOOVEGFF": "/data/GRIS_NCBR/resources/gencode.v33.annotation.gff3.gz",
+        "PATTERNS": "/data/GRIS_NCBR/resources/multiqc_config_file.yaml",
+        "REGIONS": "/data/GRIS_NCBR/resources/HG19_vcrome2.1_with_PKv1_and_PKv2_with_SNPtrace.bed",
+        "SMOOVEEXCLUSIONS": "/data/GRIS_NCBR/resources/hg38_smoove_exclusion.bed"
+
+    }
+}
