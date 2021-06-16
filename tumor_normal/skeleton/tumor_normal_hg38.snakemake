@@ -631,8 +631,8 @@ rule varscan:
                fi
                module load VarScan/{params.ver_varscan}
                
-               tumor_purity=$( echo "1-$(tail -n -1 {input.tumor_summary} | cut -f2 )" | bc -l)
-               normal_purity=$( echo "1-$(tail -n -1 {input.normal_summary} | cut -f2 )" | bc -l)
+               tumor_purity=$( echo "1-$(printf '%.6f' $(tail -n -1 {input.tumor_summary} | cut -f2 ))" | bc -l)
+               normal_purity=$( echo "1-$(printf '%.6f' $(tail -n -1 {input.normal_summary} | cut -f2 ))" | bc -l)
                
                varscan_opts="--strand-filter 1 --min-var-freq 0.01 --min-avg-qual 30 --somatic-p-value 0.05 --output-vcf 1 --normal-purity $normal_purity --tumor-purity $tumor_purity"
                
