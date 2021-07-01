@@ -172,6 +172,7 @@ bams_found=glob.glob(os.path.join(input_bamdir,'*.bam'))
 
 output_fqdir=os.path.join(BASEDIR,config['output_params']['FASTQ'])
 output_bamdir=os.path.join(BASEDIR,config['output_params']['BAM'])
+output_qcdir=os.path.join(BASEDIR,"QC")
 
 
 name_symlinks=[]
@@ -295,6 +296,10 @@ rule all:
         os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
         #os.path.join(output_germline_base,"report.html"),
         
+        expand(os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
+        expand(os.path.join(output_bamdir,"{samples}.samtools_flagstat.txt"), samples=samples),
+
         # os.path.join(merge_outdir,"maf","merged_oncoplot.pdf"),
         # os.path.join("mutect_out","maf","mutect_oncoplot.pdf"),
         # os.path.join("mutect2_out","maf","mutect2_oncoplot.pdf"),
@@ -1290,4 +1295,81 @@ rule plotAncestry:
 #
 #
 
+
+# Quality-control related rules
+rule fastqc_bam:
+    """
+    Quality-control step to assess sequencing quality of each sample.
+    FastQC generates a set of basic statistics to identify problems
+    that can arise during sequencing or library preparation.
+    @Input:
+        Recalibrated BAM file (scatter)
+    @Output:
+        FastQC report and zip file containing sequencing quality information
+    """
+    input:
+        bam = os.path.join(output_bamdir,"{samples}.recal.bam"),
+    output:
+        zipfile =  os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"),
+        report  =  os.path.join(output_qcdir,"{samples}.recal_fastqc.html")
+    params:
+        outdir = output_qcdir,
+        rname  = "fastqc_bam",
+    message: "Running FastQC with {threads} threads on '{input}' input file"
+    threads: 8
+    shell: """
+    module load fastqc/0.11.9
+    fastqc -t {threads} \\
+           -f bam \\
+           -o {params.outdir} \\
+           {input.bam} 
+    """
+
+
+rule qualimap_bamqc:
+    """
+    Quality-control step to assess various post-alignment metrics 
+    and a secondary method to calculate insert size.
+    @Input:
+        Recalibrated BAM file (scatter)
+    @Output:
+        Report containing post-aligment quality-control metrics
+    """
+    input:
+        bam  = os.path.join(output_bamdir,"{samples}.recal.bam"),
+    output: 
+        txt  = os.path.join(output_qcdir,"{samples}","genome_results.txt"),
+        html = os.path.join(output_qcdir,"{samples}","qualimapReport.html")
+    params:
+        outdir = os.path.join(output_qcdir, "{samples}"),
+        rname  = "qualibam"
+    message: "Running QualiMap BAM QC with {threads} threads on '{input}' input file"
+    threads: 8
+    shell: """
+    module load qualimap/2.2.1
+    unset DISPLAY
+    qualimap bamqc -bam {input.bam} \\
+                   --java-mem-size=48G \\
+                   -c gd hg19 -ip \\
+                   -outdir {params.outdir} \\
+                   -outformat HTML \\
+                   -nt {threads} \\
+                   --skip-duplicated \\
+                   -nw 500 \\
+                   -p NON-STRAND-SPECIFIC
+    """
+
+
+rule samtools_flagstats:
+    input:
+        bam  = os.path.join(output_bamdir,"{samples}.recal.bam"),
+    output:
+        txt  = os.path.join(output_bamdir,"{samples}.samtools_flagstat.txt")
+    params: 
+        rname = "samtools_flagstats"
+    message: "Running SAMtools flagstat on '{input}' input file"
+    shell: """
+    module load samtools/1.12
+    samtools flagstat {input.bam} > {output.txt}
+    """
 
