@@ -304,7 +304,9 @@ rule all:
 
         expand(os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
-        expand(os.path.join(output_bamdir,"{samples}.samtools_flagstat.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
+        os.path.join(output_qcdir,"raw_variants.het"), 
+        os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
 
         # expand(os.path.join(output_somatic_base,"qc","qualimap","{samples}.qualimapReport","genome_results.txt"), samples=samples),
         # os.path.join("merged_somatic_variants","maf","merged_oncoplot.pdf"),
@@ -1235,7 +1237,9 @@ rule fastqc_bam:
 rule qualimap_bamqc:
     """
     Quality-control step to assess various post-alignment metrics 
-    and a secondary method to calculate insert size.
+    and a secondary method to calculate insert size. Please see
+    QualiMap's website for more information about BAM QC:
+    http://qualimap.conesalab.org/
     @Input:
         Recalibrated BAM file (scatter)
     @Output:
@@ -1256,7 +1260,7 @@ rule qualimap_bamqc:
     unset DISPLAY
     qualimap bamqc -bam {input.bam} \\
                    --java-mem-size=48G \\
-                   -c gd hg19 -ip \\
+                   -c -gd hg19 -ip \\
                    -outdir {params.outdir} \\
                    -outformat HTML \\
                    -nt {threads} \\
@@ -1267,14 +1271,80 @@ rule qualimap_bamqc:
 
 
 rule samtools_flagstats:
+    """
+    Quality-control step to assess alignment quality. Flagstat provides 
+    counts for each of 13 categories based primarily on bit flags in the 
+    FLAG field. Information on the meaning of the flags is given in the 
+    SAM specification: https://samtools.github.io/hts-specs/SAMv1.pdf
+    @Input:
+        Recalibrated BAM file (scatter)
+    @Output:
+        Text file containing alignment statistics
+    """
     input:
         bam  = os.path.join(output_bamdir,"{samples}.recal.bam"),
     output:
-        txt  = os.path.join(output_bamdir,"{samples}.samtools_flagstat.txt")
+        txt  = os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt")
     params: 
         rname = "samtools_flagstats"
     message: "Running SAMtools flagstat on '{input}' input file"
     shell: """
     module load samtools/1.12
     samtools flagstat {input.bam} > {output.txt}
+    """
+
+
+rule vcftools:
+    """
+    Quality-control step to calculates a measure of heterozygosity on 
+    a per-individual basis. The inbreeding coefficient, F, is estimated
+    for each individual using a method of moments. Please see VCFtools
+    documentation for more information: 
+    https://vcftools.github.io/man_latest.html
+    @Input:
+        Multi-sample gVCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Text file containing a measure of heterozygosity
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
+    output: 
+        het = os.path.join(output_qcdir,"raw_variants.het"),
+    params: 
+        prefix = os.path.join(output_qcdir,"raw_variants"),
+        rname  = "vcftools",
+    message: "Running VCFtools on '{input.vcf}' input file"
+    shell: """
+    module load vcftools/0.1.16
+    vcftools --gzvcf {input.vcf} --het --out {params.prefix}
+    """
+
+
+rule collectvariantcallmetrics:
+    """
+    Quality-control step to collect summary metrics about snps and indels
+    called in a multisample VCF file. Please see the Broad's documentation
+    for more information about each field in the generated log file:
+    https://broadinstitute.github.io/picard/picard-metric-definitions.html
+    @Input:
+        Multi-sample gVCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Text file containing a collection of metrics relating to snps and indels 
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
+    output: 
+        metrics = os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+    params: 
+        dbsnp=config['references']['DBSNP'],
+        prefix = os.path.join(output_qcdir,"raw_variants"),
+        rname="varcallmetrics",
+    message: "Running Picard CollectVariantCallingMetrics on '{input.vcf}' input file"
+    shell: """
+    module load picard/2.20.8
+    java -Xmx24g -jar ${{PICARDJARPATH}}/picard.jar \\
+            CollectVariantCallingMetrics \\
+            INPUT={input.vcf} \\
+            OUTPUT={params.prefix} \\
+            DBSNP={params.dbsnp} Validation_Stringency=SILENT
     """
