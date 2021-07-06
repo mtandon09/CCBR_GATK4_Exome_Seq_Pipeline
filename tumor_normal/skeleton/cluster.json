@@ -16,6 +16,11 @@
         "mem": "48g",
         "time": "8:00:00",
     },
+    "gatk_varianteval": {
+        "threads": "16",
+        "mem": "14g",
+        "time": "8:00:00",
+    },
     "bam": {
               "threads": "2",
               "time": "12:00:00",
