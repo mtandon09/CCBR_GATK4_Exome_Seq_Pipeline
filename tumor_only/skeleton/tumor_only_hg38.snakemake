@@ -1405,7 +1405,7 @@ rule gatk_varianteval:
     module load GATK/{params.ver_gatk}
     gatk --java-options '-Xmx12g -XX:ParallelGCThreads={threads}' VariantEval \\
         -R {params.genome} \\
-        -o {output.grp} \\
+        -O {output.grp} \\
         --dbsnp {params.dbsnp} \\
         --eval {input.vcf} 
     """
@@ -1439,5 +1439,5 @@ rule snpeff:
         -csvstats {output.csv} \\
         -stats {output.html} \\
         {params.genome} \\
-        {input.vcf} > {output.vcf}"
+        {input.vcf} > {output.vcf}
     """
