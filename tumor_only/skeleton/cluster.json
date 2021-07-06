@@ -6,16 +6,6 @@
         "gres": "lscratch:256",
         "time": "2-00:00:00",
     },
-    "fastqc_bam": {
-        "mem": "24g",
-        "threads": "8",
-        "time": "6:00:00"
-    },
-    "qualimap_bamqc": {
-        "threads": "8",
-        "mem": "48g",
-        "time": "8:00:00",
-    },
     "bam": {
               "threads": "2",
               "time": "12:00:00",
