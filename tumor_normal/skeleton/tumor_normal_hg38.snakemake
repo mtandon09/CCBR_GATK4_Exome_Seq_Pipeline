@@ -301,6 +301,10 @@ rule all:
         expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
         os.path.join(output_qcdir,"raw_variants.het"), 
         os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+        
+        expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
 
         # os.path.join(merge_outdir,"maf","merged_oncoplot.pdf"),
         # os.path.join("mutect_out","maf","mutect_oncoplot.pdf"),
@@ -1443,3 +1447,90 @@ rule collectvariantcallmetrics:
     """
 
 
+rule bcftools_stats:
+    """
+    Quality-control step to collect summary statistics from bcftools stats.
+    When bcftools stats is run with one VCF file then stats by non-reference
+    allele frequency, depth distribution, stats by quality and per-sample 
+    counts, singleton statsistics are calculated. Please see bcftools' 
+    documentation for more information: 
+    http://samtools.github.io/bcftools/bcftools.html#stats
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Text file containing a collection of summary statistics
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"),
+    output: 
+        txt = os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"),
+    params: 
+        rname="bcfstats",
+    shell: """
+    module load bcftools/1.9
+    bcftools stats {input.vcf} > {output.txt}
+    """
+
+rule gatk_varianteval:
+    """
+    Quality-control step to calculate various quality control metrics from a 
+    variant callset. These metrics include the number of raw or filtered SNP 
+    counts; ratio of transition mutations to transversions; concordance of a
+    particular sample's calls to a genotyping chip; number of s per sample.
+    Please see GATK's documentation for more information: 
+    https://gatk.broadinstitute.org/hc/en-us/articles/360040507171-VariantEval
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), 
+    output: 
+        grp = os.path.join(output_qcdir,"{samples}.germline.eval.grp"),
+    params:
+        rname    = "vareval",
+        genome   = config['references']['GENOME'],
+        dbsnp    = config['references']['DBSNP'],
+        ver_gatk = config['tool_versions']['gatk4']
+    threads: 16
+    shell: """
+    module load GATK/{params.ver_gatk}
+    gatk --java-options '-Xmx12g -XX:ParallelGCThreads={threads}' VariantEval \\
+        -R {params.genome} \\
+        -o {output.grp} \\
+        --dbsnp {params.dbsnp} \\
+        --eval {input.vcf} 
+    """
+
+
+rule snpeff:
+    """
+    Data processing and quality-control step to annotate variants, predict its
+    functional effects, and collect various summary statistics about variants and
+    their annotations. Please see SnpEff's documentation for more information: 
+    https://pcingola.github.io/SnpEff/
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input:  
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz")
+    output: 
+        vcf  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.vcf"),
+        csv  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.csv"),
+        html = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"),
+    params: 
+        rname  = "snpeff",
+        genome = config['references']['SNPEFF_GENOME'],
+        config = config['references']['SNPEFF_CONFIG']
+    shell: """
+    module load snpEff/4.3t
+    java -Xmx12g -jar $SNPEFF_JAR \\
+        -v -canon -c {params.config} \\
+        -csvstats {output.csv} \\
+        -stats {output.html} \\
+        {params.genome} \\
+        {input.vcf} > {output.vcf}"
+    """
