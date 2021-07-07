@@ -1234,7 +1234,7 @@ rule fc_lane:
         rname = 'pl:fc_lane',
         get_flowcell_lanes = os.path.join("scripts", "get_flowcell_lanes.py"),
     shell: """
-    module load python/3.5
+    module load python/2.7
     python {params.get_flowcell_lanes} \\
         {input.r1} \\
         {wildcards.samples} > {output.txt}
