@@ -32,6 +32,8 @@
     },
     "references": {
         "fastqc_adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/fastqc.adapters",
+        "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
+        "KRAKENBACDB": "/fdb/kraken/20180907_standard_kraken2",
         "trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
