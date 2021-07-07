@@ -21,6 +21,16 @@
         "mem": "14g",
         "time": "8:00:00",
     },
+    "fastq_screen": {
+        "mem": "48g",
+        "threads": "24",
+        "time": "1-00:00:00"
+    },
+    "kraken": {
+        "threads": "24",
+        "gres": "lscratch:256",
+        "mem": "110g"
+    },
     "bam": {
               "threads": "2",
               "time": "12:00:00",
