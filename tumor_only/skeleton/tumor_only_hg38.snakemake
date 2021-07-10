@@ -77,9 +77,9 @@ def rename(filename):
         "_1.f(ast)?q.gz$": ".R1.fastq.gz",
         "_2.f(ast)?q.gz$": ".R2.fastq.gz",
         ####
-        # Matches: *.bam if it's not preceded by '.recal' (i.e. match '.recal.bam' exactly)
-        "(?<!\.recal)\.bam$": ".recal.bam",
-        "\.recal\.bam$": ".recal.bam"
+        # Matches: *.bam if it's not preceded by '.recal' (i.e. match '.bam' exactly)
+        "(?<!\.recal)\.bam$": ".input.bam",
+        "\.recal\.bam$": ".input.bam"
     }
 
     if filename.endswith('.R1.fastq.gz') or filename.endswith('.R2.fastq.gz'):
@@ -363,7 +363,7 @@ rule realign:
 
 rule gatk_recal:
       input:  os.path.join(output_bamdir,"{samples}.realign.bam")
-      output: bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
+      output: bam=os.path.join(output_bamdir,"{samples}.input.bam"),
               re=temp(os.path.join(output_bamdir,"{samples}_recal_data.grp"))
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tools']['gatk4']['version'],rname="recal"
       threads: 24
@@ -373,37 +373,56 @@ rule gatk_recal:
               gatk --java-options '-Xmx48g' ApplyBQSR --reference {params.genome} --input {input} --bqsr-recal-file {output.re} --output {output.bam} --use-jdk-inflater --use-jdk-deflater
               """
 
-rule bam_index:
-      input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
-      output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
-              bai2=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
-      params: ver_samtools=config['tools']['samtools']['version'],rname="bam_index"
+rule bam_check:
+      input:  bam=os.path.join(output_bamdir,"{samples}.input.bam")
+      output: bam=os.path.join(output_bamdir,"{samples}.bam"),
+              bai=os.path.join(output_bamdir,"{samples}.bai"),
+              bai2=os.path.join(output_bamdir,"{samples}.bam.bai"),
+      params: ver_samtools=config['tools']['samtools']['version'],rname="bam_check"
       shell:  """
               module load samtools/{params.ver_samtools}
+              module load GATK/{params.ver_gatk}
+              
+              sample={params.sample}
+              ID=$sample
+              PL="ILLUMINA"  ### Should be exposed as a config param
+              LB="na"        ### Should be exposed as a config param (?)
+              
+              ##Check if there is no header or any of the info
+              HEADER=`samtools view -H {input.bam} | grep ^@RG`
+              if [[ "$HEADER" != "" ]]; then
+                  t=(${{HEADER//\t/ }})
+                  echo ${{t[1]}}
+                  ID=`printf '%s\n' "${{t[@]}}" | grep -P '^ID' | cut -d":" -f2` #(${{t[1]//:/ }})
+                  PL=`printf '%s\n' "${{t[@]}}" | grep -P '^PL' | cut -d":" -f2` #(${{t[3]//:/ }})
+                  LB=`printf '%s\n' "${{t[@]}}" | grep -P '^LB' | cut -d":" -f2` #(${{t[2]//:/ }})
+                  if [[ "$ID" == "$sample" ]]; then
+                      echo "The header of the BAM file is correct"
+                  else
+                      ID=$sample
+                  fi
+              fi
+              gatk AddOrReplaceReadGroups --INPUT {input.bam} --OUTPUT {input.bam}.tmp --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
+              rm {input.bam}; mv {input.bam}.tmp {input.bam}
+              
               samtools index -@ 2 {input.bam} {output.bai}
               cp {output.bai} {output.bai2}
               """
-# rule qualimap:
-#     input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
-#     output: qualimaptxt=os.path.join(output_somatic_base,"qc","qualimap","{samples}.qualimapReport","genome_results.txt")
-#     params: organism=config['references']['ORGANISM'],
-#             annot=config['references']['MAF_GENOME'],
-#             bed_script=config['scripts']['reformat_bed'],
-#             targets=exome_targets_bed,
-#             rname="pl:qualimap"
-#     shell:"""
-#     #module load python/3.6
-#     #python3 {params.bed_script} --input_bed {params.targets} --genome {params.annot} > targets.bed" ### qualimap requires a six-field BED file; agilent's bed file only has 4
-#     module load qualimap/2.2.1;
-#     unset DISPLAY;
-#     qualimap bamqc -bam {input.bam} --java-mem-size=48G -c gd {params.organism} -ip \
-#                                             -outdir $(dirname {output.qualimaptxt}) -gff {params.targets} \
-#                                             -outformat HTML -nt $((SLURM_CPUS_PER_TASK-1)) --skip-duplicated -nw 500 -p NON-STRAND-SPECIFIC
-#           """
+
+# rule bam_index:
+#       input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
+#       output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
+#               bai2=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
+#       params: ver_samtools=config['tools']['samtools']['version'],rname="bam_index"
+#       shell:  """
+#               module load samtools/{params.ver_samtools}
+#               samtools index -@ 2 {input.bam} {output.bai}
+#               cp {output.bai} {output.bai2}
+#               """
     
 rule split_bam_by_chrom:
-      input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
-              bai=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
+      input:  bam=os.path.join(output_bamdir,"{samples}m"),
+              bai=os.path.join(output_bamdir,"{samples}.bam.bai"),
       output: split_bam=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
               split_bam_idx=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bai")
       params: ver_samtools=config['tools']['samtools']['version'],rname="bam_split"
@@ -467,8 +486,8 @@ rule LearnReadOrientationModel:
 #            """
         
 rule pileup:
-    input: tumor=os.path.join(output_bamdir,"{samples}.recal.bam"),
-           bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
+    input: tumor=os.path.join(output_bamdir,"{samples}.bam"),
+           bai=os.path.join(output_bamdir,"{samples}.bai"),
            intervals=intervals_file
     output: pileup=temp(os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}.pileup.table")),
     params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tools']['gatk4']['version'],chroms=chroms, rname="pileup"
@@ -487,7 +506,7 @@ rule contamination:
            """
 
 # rule pileup_normal:
-#     input: normal = lambda w: [os.path.join(output_bamdir, pairs_dict[w.samples] + ".recal.bam")],
+#     input: normal = lambda w: [os.path.join(output_bamdir, pairs_dict[w.samples] + ".bam")],
 #     output: summary=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_normal.pileup.table")
 #     params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tools']['gatk4']['version'],rname="pileup"
 #     shell: """
@@ -634,12 +653,15 @@ rule varscan_single:
                
                varscan_opts="--strand-filter 0 --min-var-freq 0.01 --output-vcf 1 --variants 1"
                
-               pileup_cmd="samtools mpileup -d 10000 -q 15 -Q 15 -f {params.genome} {input.tumor}"
+               pileup_cmd="samtools mpileup -d 100000 -q 15 -Q 15 -f {params.genome} {input.tumor}"
                varscan_cmd="varscan mpileup2cns <($pileup_cmd) $varscan_opts"
                
-               full_cmd="$varscan_cmd | bcftools view -U > {output.vcf}"
+               #full_cmd="$varscan_cmd | bcftools view -U > {output.vcf}"
+               #eval "$full_cmd"
                
-               eval "$full_cmd"
+               eval "$varscan_cmd > {output.vcf}.gz"
+               eval "bcftools view -U {output.vcf}.gz > {output.vcf}"
+               
                """
 
 rule varscan_filter_single:
@@ -790,7 +812,7 @@ rule sobdetect_get:
 rule sobdetect_pass1:
     # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
     input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
-           bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
+           bam=os.path.join(output_bamdir,"{samples}m"),
            SOBDetector_jar=SOBDetector_JARFILE
     output: pass1_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass1","{samples}.sobdetect.vcf"),
             pass1_info=os.path.join(SOBDetector_out,"{vc_outdir}","pass1","{samples}.info")
@@ -828,7 +850,7 @@ rule sobdetect_cohort_params:
 rule sobdetect_pass2:
   # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
   input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
-         bam=os.path.join(output_bamdir,"{samples}.recal.bam"),
+         bam=os.path.join(output_bamdir,"{samples}m"),
          SOBDetector_jar=SOBDetector_JARFILE,
          params_file=os.path.join(SOBDetector_out,"{vc_outdir}","cohort_params.txt")
   output: pass2_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"),
@@ -1058,8 +1080,8 @@ rule collect_ffpefilter_mafs:
 
 rule haplotypecaller:
     input: 
-        bam=os.path.join(output_bamdir, "{samples}.recal.bam"),
-        bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
+        bam=os.path.join(output_bamdir, "{samples}.bam"),
+        bai=os.path.join(output_bamdir,"{samples}.bai"),
     output:
         gzvcf = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz")),
         index = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz.tbi")),
@@ -1216,7 +1238,7 @@ rule fastqc_bam:
         FastQC report and zip file containing sequencing quality information
     """
     input:
-        bam = os.path.join(output_bamdir,"{samples}.recal.bam"),
+        bam = os.path.join(output_bamdir,"{samples}.bam"),
     output:
         zipfile =  os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"),
         report  =  os.path.join(output_qcdir,"{samples}.recal_fastqc.html")
@@ -1246,7 +1268,7 @@ rule qualimap_bamqc:
         Report containing post-aligment quality-control metrics
     """
     input:
-        bam  = os.path.join(output_bamdir,"{samples}.recal.bam"),
+        bam  = os.path.join(output_bamdir,"{samples}.bam"),
     output: 
         txt  = os.path.join(output_qcdir,"{samples}","genome_results.txt"),
         html = os.path.join(output_qcdir,"{samples}","qualimapReport.html")
@@ -1282,7 +1304,7 @@ rule samtools_flagstats:
         Text file containing alignment statistics
     """
     input:
-        bam  = os.path.join(output_bamdir,"{samples}.recal.bam"),
+        bam  = os.path.join(output_bamdir,"{samples}.bam"),
     output:
         txt  = os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt")
     params: 
@@ -1348,3 +1370,154 @@ rule collectvariantcallmetrics:
             OUTPUT={params.prefix} \\
             DBSNP={params.dbsnp} Validation_Stringency=SILENT
     """
+
+  
+rule somalier_relatedness:
+    input:
+        somalier=expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
+    output:
+        somalierPairs=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+        somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+        somalierAncestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+    params: ver_singularity=config['tool_versions']['ver_singularity'],ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
+            sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_relatedness"
+    shell:  """
+        module load singularity    
+	    ANCESTRY_DB={params.ancestry_db}
+        CONTAINER={params.container}
+        GENOME_FASTA={params.genomeFasta}
+        SITES_VCF={params.sites_vcf}
+        OUT_DIR=$(dirname {output.somalierPairs}) #Need to set this path somewhere
+        SOMALIER_CMDS="date;
+                    somalier relate -o /out/relatedness /out/*.somalier;
+                    somalier ancestry -o /out/ancestry --labels /refs/ancestry/ancestry-labels-1kg.tsv /refs/ancestry/*.somalier ++ /out/*.somalier;
+                    echo 'Done';
+                    date;"
+            ## Run the commands in the image with binded paths to input/output files
+            singularity exec --bind $GENOME_FASTA:/refs/genome.fa \
+                                     --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \
+                                     --bind $SITES_VCF:/refs/sites.vcf.gz \
+                                     --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \
+                                     --bind $ANCESTRY_DB:/refs/ancestry/ \
+                                     --bind $OUT_DIR:/out \
+                                     $CONTAINER \
+                                     /bin/sh -c "$SOMALIER_CMDS"
+            """
+
+rule somalier_analysis:
+    input:  somalierPairs=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+            somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+            somalierAncestry=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+    output: finalFileGender=os.path.join(output_germline_base,"predicted.genders.tsv"),
+            finalFilePairs=os.path.join(output_germline_base,"predicted.pairs.tsv"),
+            ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
+            pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+    params: ver_R=config['tool_versions']['R_v4'],
+            script_path_gender=config['scripts']['genderPrediction'],
+            script_path_samples=config['scripts']['combineSamples'],
+            script_path_pca=config['scripts']['ancestry'],
+            rname = "genderPrediction"
+    shell: """
+            module load R/{params.ver_R}
+            
+            Rscript {params.script_path_gender} {input.somalierSamples} {output.finalFileGender}
+            
+            Rscript {params.script_path_samples} {input.somalierPairs} {output.finalFilePairs}
+            
+            Rscript {params.script_path_pca} {input.somalierAncestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
+    """
+    
+# rule genderPrediction:
+#     input: 
+#             somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+#     output: finalFile=os.path.join(output_germline_base,"predicted.genders.tsv")
+#     params: ver_R=config['tool_versions']['R_v4'],
+#             script_path=config['scripts']['genderPrediction'],
+#             rname = "genderPrediction"
+#     shell: """
+#             module load R/{params.ver_R}
+#             Rscript {params.script_path} {input.somalierSamples} {output.finalFile}
+#     """
+#     
+# rule verifyBAMID:
+#     input:  bam=(os.path.join(output_bamdir,"{samples}.recal.bam")),
+#             bai=(os.path.join(output_bamdir,"{samples}.recal.bam.bai"))
+#     output: result=os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry")
+#     params: sample="{samples}",ver_singularity=config['tool_versions']['ver_singularity'],resource=config['references']['VERIFYBAMID']['RESOURCE'],container=config['references']['VERIFYBAMID']['CONTAINER'],
+#             genomeFasta=config['references']['GENOME'],rname="pl:verifyBAM"
+#     # threads: 32
+#     shell:  """ 
+#         module load singularity
+# 	    bam={input.bam}
+#         BAM_BASE=$(basename $bam)
+# 	    sampleName={params.sample}
+#         OUT_DIR=$(dirname {output.result})
+#         #mkdir -p $OUT_DIR
+# 	    BAM_DIR=$(dirname $bam)
+#         GENOME_FASTA_DIR=$(dirname {params.genomeFasta})
+#         GENOME_FASTA_NAME=$(basename {params.genomeFasta})
+#         CONTAINER={params.container}
+#         VerifyBAMIDPath={params.resource}
+#         VERIFYBAMID_CMDS="date;
+#                         VerifyBamID --NumPC 4 --SVDPrefix /VerifyBamID/resource/1000g.phase3.10k.b38.vcf.gz.dat --BamFile  /VerifyBamID/localDirectory/$BAM_BASE --Reference  /Reference/$GENOME_FASTA_NAME --Output /VerifyBamID/outputDir/$sampleName;
+#                         date;"
+#                                   ## Run the commands in the image with binded paths to input/output files
+#                                   singularity exec --bind $BAM_DIR:/VerifyBamID/localDirectory \
+#                                                    --bind $OUT_DIR:/VerifyBamID/outputDir \
+#                                                    --bind $VerifyBAMIDPath:/VerifyBamID/resource/ \
+#                                                    --bind $bam:/mnt/bam \
+#                                                    --bind $GENOME_FASTA_DIR:/Reference/ \
+#                                                    $CONTAINER \
+#                                                    /bin/sh -c "$VERIFYBAMID_CMDS"
+#         outputFile={output.result}
+#         if [ -f "$outputFile" ]; then
+#             echo "$outputFile exists."
+#         else 
+#             echo "$outputFile does not exist. Creating one"
+#             #touch $outputFile
+#             obj="PC\\tContaminatingSample\\tIntendedSample\\n1\\tNA\\tNA\\n2\\tNA\\tNA\\n3\\tNA\\tNA\\n4\\tNA\\tNA"
+#             echo -e $obj > $outputFile
+#         fi
+#             
+#             """
+#         
+# rule verifyBAMID_results_merge:
+#     input:
+#         expand(os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry"), samples=samples),
+#     output:
+#         list = os.path.join(output_germline_base,"verifyBAMID","allAncestorySamples.txt"),
+#         finalPairs = os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
+#     params:
+#         ver_R=config['tool_versions']['R_v4'],rname = "merge_verifyBAMID"
+#     shell:
+#         """
+#         module load R/{params.ver_R}
+#         ls -d $(dirname "{output.list}")/*.Ancestry > "{output.list}"
+#         ##Run the RScript to create the pair file
+#         Rscript RScripts/combineVerifyBAMIDResults.R {output.list} {output.finalPairs}
+#         """
+        
+# rule combineSampleCompareResults:
+#     input: 
+#            somalier=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+#            #verifyBAM=os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
+#     output: finalFile=os.path.join(output_germline_base,"predicted.pairs.tsv")
+#     params: ver_R=config['tool_versions']['R_v4'],
+#             script_path=config['scripts']['combineAncestry'],
+#             rname = "combineSampleCompareResults"
+#     shell: """
+#             module load R/{params.ver_R}
+#             Rscript RScripts/combineAllSampleCompareResults.R {input.somalier} {output.finalFile}
+#     """
+#     
+# rule plotAncestry:
+#     input: ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+#            predictedPairs=os.path.join(output_germline_base,"predicted.pairs.tsv")
+#     output: ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
+#             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+#     params: ver_R=config['tool_versions']['R_v4'],rname = "plotAncestry"
+#     shell: """
+#             module load R/{params.ver_R}
+#             Rscript RScripts/sampleCompareAncestoryPlots.R {input.ancestry} {input.predictedPairs} {output.ancestoryPlot} {output.pairAncestoryHist}
+#     """
+        

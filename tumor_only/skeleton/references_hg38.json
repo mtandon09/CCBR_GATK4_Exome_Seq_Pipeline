@@ -68,7 +68,10 @@
         "freec_p2_config": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass2_exome_tn_config.pl",
         "freec_significance": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/assess_significance.R",
         "freec_plot": "/data/CCBR_Pipeliner/db/PipeDB/bin/FREEC/scripts/makeGraph.R",
-        "run_sequenza": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/run_sequenza.R"
+        "run_sequenza": "/data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/run_sequenza.R",
+        "genderPrediction": "RScripts/predictGender.R",
+        "combineSamples": "RScripts/combineAllSampleCompareResults.R",
+        "ancestry": "RScripts/sampleCompareAncestoryPlots.R"
     },
     "tools": {
         "trimmomatic": {
