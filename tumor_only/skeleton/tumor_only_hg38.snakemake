@@ -1379,7 +1379,7 @@ rule somalier_relatedness:
         somalierPairs=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
         somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
         somalierAncestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
-    params: ver_singularity=config['tool_versions']['ver_singularity'],ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
+    params: ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
             sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_relatedness"
     shell:  """
         module load singularity    
@@ -1412,7 +1412,7 @@ rule somalier_analysis:
             finalFilePairs=os.path.join(output_germline_base,"predicted.pairs.tsv"),
             ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
-    params: ver_R=config['tool_versions']['R_v4'],
+    params: ver_R=config['tools']['R']['version'],
             script_path_gender=config['scripts']['genderPrediction'],
             script_path_samples=config['scripts']['combineSamples'],
             script_path_pca=config['scripts']['ancestry'],

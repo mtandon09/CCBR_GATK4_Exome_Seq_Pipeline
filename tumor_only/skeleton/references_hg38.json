@@ -109,7 +109,7 @@
             "version": "11.5"
         },
         "R": {
-            "version": "3.6.1"
+            "version": "4.1"
         }
     },
     "available_somatic_callers": ["mutect2","mutect","vardict","varscan"],
