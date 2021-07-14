@@ -69,6 +69,8 @@ def rename(filename):
         # Matches: _R[12]_fastq.gz, _R[12].fastq.gz, _R[12]_fq.gz, etc.
         ".R1.f(ast)?q.gz$": ".R1.fastq.gz",
         ".R2.f(ast)?q.gz$": ".R2.fastq.gz",
+        # ".R1(?<!\.trimmed).f(ast)?q.gz$": ".R1.fastq.gz",
+        # ".R2(?<!\.trimmed).f(ast)?q.gz$": ".R2.fastq.gz",
         # Matches: _R[12]_001_fastq_gz, _R[12].001.fastq.gz, _R[12]_001.fq.gz, etc.
         # Capture lane information as named group
         ".R1.(?P<lane>...).f(ast)?q.gz$": ".R1.fastq.gz",
@@ -158,11 +160,14 @@ configfile:"references_hg38.json"
 
 ######### PARSE CONFIG PARAMS #########
 BASEDIR=os.path.realpath(config['input_params']['BASE_OUTDIR'])
-input_fqdir=config['input_params']['FASTQ_SOURCE']
-fqs_found=glob.glob(os.path.join(input_fqdir,'*.fastq.gz'))
 
-input_bamdir=os.path.join(config['input_params']['BAM_SOURCE'])
-bams_found=glob.glob(os.path.join(input_bamdir,'*.bam'))
+input_fqdir=os.path.join(BASEDIR,"input_files","fastq")
+fq_source=config['input_params']['FASTQ_SOURCE']
+fqs_found=glob.glob(os.path.join(fq_source,'*.fastq.gz'))
+
+input_bamdir=os.path.join(BASEDIR,"input_files","bam")
+bam_source=os.path.join(config['input_params']['BAM_SOURCE'])
+bams_found=glob.glob(os.path.join(bam_source,'*.bam'))
 
 output_fqdir=os.path.join(BASEDIR,config['output_params']['FASTQ'])
 output_bamdir=os.path.join(BASEDIR,config['output_params']['BAM'])
@@ -172,25 +177,25 @@ output_qcdir=os.path.join(BASEDIR,"QC")
 name_symlinks=[]
 if fqs_found:
     name_suffix=".R[1,2].fastq.gz"
-    if not os.path.exists(output_fqdir):
+    if not os.path.exists(input_fqdir):
         # print("making"+output_fqdir)
-        os.makedirs(output_fqdir) 
-        name_symlinks=_sym_safe_(fqs_found, output_fqdir)
+        os.makedirs(input_fqdir) 
+        name_symlinks=_sym_safe_(fqs_found, input_fqdir)
     else:
-        name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
+        name_symlinks=glob.glob(os.path.join(input_fqdir,'*.fastq.gz'))
 elif bams_found:
     name_suffix=".input.bam"
-    if not os.path.exists(output_bamdir):
-        os.makedirs(output_bamdir) 
-    if (len(os.listdir(output_bamdir))==0):
-        bam_symlinks=_sym_safe_(bams_found, os.path.join(output_bamdir,"preprocessing"))
-    name_symlinks=glob.glob(os.path.join(output_bamdir,"preprocessing",'*.input.bam'))
+    if not os.path.exists(input_bamdir):
+        os.makedirs(input_bamdir) 
+    if (len(os.listdir(input_bamdir))==0):
+        bam_symlinks=_sym_safe_(bams_found, input_bamdir)
+    name_symlinks=glob.glob(os.path.join(input_bamdir,'*.input.bam'))
 else:
     raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
         FASTQ source path provided: {}
         BAM source path provided: {}
         Folders should contain files ending with '.fastq.gz' or '.bam' respectively.
-        """.format(input_fqdir, input_bamdir, sys.argv[0])
+        """.format(fq_source, bam_source, sys.argv[0])
     )
 
 samples = set([re.sub(name_suffix,"",os.path.basename(fname)) for fname in name_symlinks]) ## Only returns paired fqs
@@ -221,7 +226,7 @@ caller_list=list(set(caller_list) & set(config['available_somatic_callers']))
 
 if not caller_list:
     raise NameError("""\n\tFatal: Must define one or more variant caller!
-        """.format(input_fqdir, input_bamdir, sys.argv[0])
+        """.format(fq_source, input_bamdir, sys.argv[0])
     )
 
 merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
@@ -270,7 +275,7 @@ if 'CNV_CALLING' in config['input_params']:
 
 rule all:
     input:
-        expand(os.path.join(output_bamdir,"preprocessing","{samples}.input.bam"), samples=samples),
+        expand(os.path.join(input_bamdir,"{samples}.input.bam"), samples=samples),
         expand(os.path.join(output_bamdir,"final_bams","{samples}.bam"), samples=samples),
         # expand(os.path.join(output_bamdir,"preprocessing","{samples}.input.bai"), samples=samples),
         expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
@@ -371,7 +376,7 @@ rule realign:
 
 rule gatk_recal:
       input:  os.path.join(output_bamdir,"preprocessing","{samples}.realign.bam")
-      output: bam=os.path.join(output_bamdir,"preprocessing","{samples}.input.bam"),
+      output: bam=os.path.join(input_bamdir,"{samples}.input.bam"),
               re=temp(os.path.join(output_bamdir,"preprocessing","{samples}_recal_data.grp"))
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tools']['gatk4']['version'],rname="recal"
       threads: 24
@@ -382,7 +387,7 @@ rule gatk_recal:
               """
 
 rule bam_check:
-      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.input.bam")
+      input:  bam=os.path.join(input_bamdir,"{samples}.input.bam")
       output: bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
               bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
               bai2=os.path.join(output_bamdir,"final_bams","{samples}.bam.bai"),
@@ -412,10 +417,9 @@ rule bam_check:
                       ID=$sample
                   fi
               fi
-              gatk AddOrReplaceReadGroups --INPUT {input.bam} --OUTPUT {input.bam}.tmp --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
-              rm {input.bam}; mv {input.bam}.tmp {input.bam}
+              gatk AddOrReplaceReadGroups --INPUT {input.bam} --OUTPUT {output.bam} --RGID ${{ID}} --RGLB ${{LB}} --RGPL ${{PL}} --RGSM ${{ID}} --RGPU na
               
-              samtools index -@ 2 {input.bam} {output.bai}
+              samtools index -@ 2 {output.bam} {output.bai}
               cp {output.bai} {output.bai2}
               """
     
