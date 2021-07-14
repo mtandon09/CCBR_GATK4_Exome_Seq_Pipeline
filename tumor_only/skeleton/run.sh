@@ -49,14 +49,14 @@ else
     if [ ! -z $configarg ]; then configarg="--config \"input_params={$(echo -e $configarg | sed -e 's/^,//')}\""; fi
 fi
 if [ ! -z $UNLOCK ]; then
-    module load snakemake/5.24.1
+    module load snakemake/6.0.5
     echo $configarg
     mycmd="snakemake -j2 --snakefile $SNAKEFILE --rerun-incomplete $configarg --unlock"
     eval $mycmd
     exit 0
 fi
 if [ ! -z $RULEGRAPH ]; then
-    module load snakemake/5.24.1
+    module load snakemake/6.0.5
     module load graphviz
     mycmd="snakemake --snakefile $SNAKEFILE --rerun-incomplete --rulegraph $configarg | dot -Tpng > $RULEGRAPH"
     #echo $mycmd
@@ -65,7 +65,7 @@ if [ ! -z $RULEGRAPH ]; then
     exit 0
 fi
 if [ ! -z $REPORT ]; then
-    module load snakemake/5.24.1
+    module load snakemake/6.0.5
     module load graphviz
     mycmd="snakemake --snakefile $SNAKEFILE --rerun-incomplete --report $REPORT $configarg"
     #echo $mycmd
@@ -82,7 +82,7 @@ dryrunarg=""
 if [ ! -z $DRYRUN ]; then dryrunarg="-n"; fi
 
 #smk_cmd_base="snakemake --stats snakemake.stats --restart-times 0 --rerun-incomplete -j 500 --cluster "$CLUSTER_OPTS" --cluster-config cluster.json --keep-going --snakefile $SNAKEFILE $untilarg $dryrunarg > snakemake.log 2>&1;"
-smk_cmd_base="module load snakemake/5.24.1; snakemake --stats snakemake.stats --rerun-incomplete --cluster \"$CLUSTER_OPTS\" --cluster-config cluster.json --keep-going --snakefile $SNAKEFILE $untilarg $configarg"
+smk_cmd_base="module load snakemake/6.0.5; snakemake --stats snakemake.stats --rerun-incomplete --cluster \"$CLUSTER_OPTS\" --cluster-config cluster.json --keep-going --snakefile $SNAKEFILE $untilarg $configarg"
 
 
 NJOBS="500"
@@ -91,8 +91,8 @@ if [ ! -z $DRYRUN ]; then
     eval "$smk_cmd_base -npr -j $NJOBS"
 else
     if [ ! -z $LOCAL ]; then
-        echo "module load snakemake/5.24.1; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
-        eval "module load snakemake/5.24.1; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
+        echo "module load snakemake/6.0.5; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
+        eval "module load snakemake/6.0.5; module load graphviz; snakemake --rerun-incomplete --snakefile $SNAKEFILE -j $LOCAL $untilarg $configarg"
     else
         echo -e "#!/usr/bin/bash\n$smk_cmd_base -j $NJOBS --restart-times 1 --latency-wait 120 \n > snakemake.log 2>&1" > $SUBMIT_SCRIPT
         echo "Submitting pipeline to cluster... "
