@@ -179,12 +179,12 @@ if fqs_found:
     else:
         name_symlinks=glob.glob(os.path.join(output_fqdir,'*.fastq.gz'))
 elif bams_found:
-    name_suffix=".recal.bam"
+    name_suffix=".input.bam"
     if not os.path.exists(output_bamdir):
         os.makedirs(output_bamdir) 
     if (len(os.listdir(output_bamdir))==0):
-        bam_symlinks=_sym_safe_(bams_found, output_bamdir)
-    name_symlinks=glob.glob(os.path.join(output_bamdir,'*.recal.bam'))
+        bam_symlinks=_sym_safe_(bams_found, os.path.join(output_bamdir,"preprocessing"))
+    name_symlinks=glob.glob(os.path.join(output_bamdir,"preprocessing",'*.input.bam'))
 else:
     raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
         FASTQ source path provided: {}
@@ -270,8 +270,9 @@ if 'CNV_CALLING' in config['input_params']:
 
 rule all:
     input:
-        expand(os.path.join(output_bamdir,"{samples}.recal.bam"), samples=samples),
-        expand(os.path.join(output_bamdir,"{samples}.recal.bai"), samples=samples),
+        expand(os.path.join(output_bamdir,"preprocessing","{samples}.input.bam"), samples=samples),
+        expand(os.path.join(output_bamdir,"final_bams","{samples}.bam"), samples=samples),
+        # expand(os.path.join(output_bamdir,"preprocessing","{samples}.input.bai"), samples=samples),
         expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
 
         # expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
@@ -292,11 +293,18 @@ rule all:
         
         expand(os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"), samples=samples),
 
+        expand(os.path.join(output_fqdir,"{samples}.fastq.info.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
         os.path.join(output_qcdir,"raw_variants.het"), 
         os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+        
+        expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
 
         # expand(os.path.join(output_somatic_base,"qc","qualimap","{samples}.qualimapReport","genome_results.txt"), samples=samples),
         # os.path.join("merged_somatic_variants","maf","merged_oncoplot.pdf"),
@@ -322,7 +330,7 @@ rule trimmomatic:
             myoutdir="$(dirname {output.one})"
             if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
             
-            trimmomatic PE -threads $((SLURM_CPUS_PER_TASK-1)) -phred33 {input.r1} {input.r1} {output.one} {output.two} {output.three} {output.four} ILLUMINACLIP:{params.adapterfile}:3:30:10 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:20 MINLEN:20 2> {output.err}
+            trimmomatic PE -threads $((SLURM_CPUS_PER_TASK-1)) -phred33 {input.r1} {input.r2} {output.one} {output.two} {output.three} {output.four} ILLUMINACLIP:{params.adapterfile}:3:30:10 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:20 MINLEN:20 2> {output.err}
             
             """
 #trimmomatic PE -threads $((CPUS_PER_TASK-1)) -phred33 {input[0]} {input[1]} {output.one} {output.two} {output.three} {output.four} ILLUMINACLIP:{params.adapterfile}:3:30:10 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:20 MINLEN:20 2> {output.err}
@@ -330,7 +338,7 @@ rule trimmomatic:
 rule bwa_mem:
     input:  os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz"),
             os.path.join(output_fqdir,"{samples}.R2.trimmed.fastq.gz")
-    output: temp(os.path.join(output_bamdir,"{samples}.raw_map.bam"))
+    output: temp(os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam"))
     params: genome=config['references']['GENOME'],sample = "{samples}",ver_samtools=config['tools']['samtools']['version'],ver_bwa=config['tools']['bwa']['version'],rname="pl:bwamem"
     # threads: 32
     shell:  """
@@ -342,18 +350,18 @@ rule bwa_mem:
             """
 
 rule raw_index:
-      input:  bam=os.path.join(output_bamdir,"{samples}.raw_map.bam")
-      output: bai=temp(os.path.join(output_bamdir,"{samples}.raw_map.bai")),
+      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam")
+      output: bai=temp(os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai")),
       params: ver_samtools=config['tools']['samtools']['version'],rname="raw_index"
       shell:  """
               module load samtools/{params.ver_samtools}
               samtools index -@ 2 {input.bam} {output.bai}
               """
 rule realign:
-      input:  bam=os.path.join(output_bamdir,"{samples}.raw_map.bam"),
-              bai=os.path.join(output_bamdir,"{samples}.raw_map.bai"),
-      output: bam=temp(os.path.join(output_bamdir,"{samples}.realign.bam")),
-              int=temp(os.path.join(output_bamdir,"{samples}.intervals")),
+      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam"),
+              bai=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai"),
+      output: bam=temp(os.path.join(output_bamdir,"preprocessing","{samples}.realign.bam")),
+              int=temp(os.path.join(output_bamdir,"preprocessing","{samples}.intervals")),
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNINDELS'],ver_gatk=config['tools']['gatk3']['version'],rname="realign"
       shell:  """
               module load GATK/{params.ver_gatk}
@@ -362,9 +370,9 @@ rule realign:
               """
 
 rule gatk_recal:
-      input:  os.path.join(output_bamdir,"{samples}.realign.bam")
-      output: bam=os.path.join(output_bamdir,"{samples}.input.bam"),
-              re=temp(os.path.join(output_bamdir,"{samples}_recal_data.grp"))
+      input:  os.path.join(output_bamdir,"preprocessing","{samples}.realign.bam")
+      output: bam=os.path.join(output_bamdir,"preprocessing","{samples}.input.bam"),
+              re=temp(os.path.join(output_bamdir,"preprocessing","{samples}_recal_data.grp"))
       params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tools']['gatk4']['version'],rname="recal"
       threads: 24
       shell:  """
@@ -374,16 +382,18 @@ rule gatk_recal:
               """
 
 rule bam_check:
-      input:  bam=os.path.join(output_bamdir,"{samples}.input.bam")
-      output: bam=os.path.join(output_bamdir,"{samples}.bam"),
-              bai=os.path.join(output_bamdir,"{samples}.bai"),
-              bai2=os.path.join(output_bamdir,"{samples}.bam.bai"),
-      params: ver_samtools=config['tools']['samtools']['version'],rname="bam_check"
+      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.input.bam")
+      output: bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
+              bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
+              bai2=os.path.join(output_bamdir,"final_bams","{samples}.bam.bai"),
+      params: ver_samtools=config['tools']['samtools']['version'],
+              ver_gatk=config['tools']['gatk4']['version'],
+              rname="bam_check"
       shell:  """
               module load samtools/{params.ver_samtools}
               module load GATK/{params.ver_gatk}
               
-              sample={params.sample}
+              sample={wildcards.samples}
               ID=$sample
               PL="ILLUMINA"  ### Should be exposed as a config param
               LB="na"        ### Should be exposed as a config param (?)
@@ -408,21 +418,10 @@ rule bam_check:
               samtools index -@ 2 {input.bam} {output.bai}
               cp {output.bai} {output.bai2}
               """
-
-# rule bam_index:
-#       input:  bam=os.path.join(output_bamdir,"{samples}.recal.bam")
-#       output: bai=os.path.join(output_bamdir,"{samples}.recal.bai"),
-#               bai2=os.path.join(output_bamdir,"{samples}.recal.bam.bai"),
-#       params: ver_samtools=config['tools']['samtools']['version'],rname="bam_index"
-#       shell:  """
-#               module load samtools/{params.ver_samtools}
-#               samtools index -@ 2 {input.bam} {output.bai}
-#               cp {output.bai} {output.bai2}
-#               """
     
 rule split_bam_by_chrom:
-      input:  bam=os.path.join(output_bamdir,"{samples}m"),
-              bai=os.path.join(output_bamdir,"{samples}.bam.bai"),
+      input:  bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
+              bai=os.path.join(output_bamdir,"final_bams","{samples}.bam.bai"),
       output: split_bam=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
               split_bam_idx=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bai")
       params: ver_samtools=config['tools']['samtools']['version'],rname="bam_split"
@@ -486,8 +485,8 @@ rule LearnReadOrientationModel:
 #            """
         
 rule pileup:
-    input: tumor=os.path.join(output_bamdir,"{samples}.bam"),
-           bai=os.path.join(output_bamdir,"{samples}.bai"),
+    input: tumor=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
+           bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
            intervals=intervals_file
     output: pileup=temp(os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}.pileup.table")),
     params: genome=config['references']['GENOME'],germsource=config['references']['1000GSNP'],ver_gatk=config['tools']['gatk4']['version'],chroms=chroms, rname="pileup"
@@ -812,7 +811,7 @@ rule sobdetect_get:
 rule sobdetect_pass1:
     # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
     input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
-           bam=os.path.join(output_bamdir,"{samples}m"),
+           bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
            SOBDetector_jar=SOBDetector_JARFILE
     output: pass1_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass1","{samples}.sobdetect.vcf"),
             pass1_info=os.path.join(SOBDetector_out,"{vc_outdir}","pass1","{samples}.info")
@@ -850,7 +849,7 @@ rule sobdetect_cohort_params:
 rule sobdetect_pass2:
   # input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.vcf"),
   input: vcf=os.path.join(output_somatic_snpindels,"{vc_outdir}","vcf","{samples}.FINAL.norm.vcf"),
-         bam=os.path.join(output_bamdir,"{samples}m"),
+         bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
          SOBDetector_jar=SOBDetector_JARFILE,
          params_file=os.path.join(SOBDetector_out,"{vc_outdir}","cohort_params.txt")
   output: pass2_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"),
@@ -1080,8 +1079,8 @@ rule collect_ffpefilter_mafs:
 
 rule haplotypecaller:
     input: 
-        bam=os.path.join(output_bamdir, "{samples}.bam"),
-        bai=os.path.join(output_bamdir,"{samples}.bai"),
+        bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
+        bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
     output:
         gzvcf = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz")),
         index = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz.tbi")),
@@ -1227,6 +1226,113 @@ rule Gatk_SelectVariants:
 
 
 # Quality-control related rules
+rule fc_lane:
+    """
+    Quality-control step to get flowcell and lane information from FastQ file.
+    FastQ files generated with older versions of Casava or downloaded from
+    SRA have a different format than newer FastQ files generated with the
+    current version of Casava. It is worth noting that FastQ files downloaded from SRA
+    or FastQ files generated with Casava version < 1.8 do not have Flowcell
+    IDs in its sequence indentifer. If a FastQ file does not have Flowcell IDs,
+    the Machine or Instrument ID is grabbed instead.
+    @Input:
+        Raw FastQ R1 file (scatter)
+    @Output:
+        Text file containing information about the FastQ file
+    """
+    input:
+        r1 = os.path.join(input_fqdir, "{samples}.R1.fastq.gz"),
+    output:
+        txt = os.path.join(output_fqdir,"{samples}.fastq.info.txt")
+    params:
+        rname = 'pl:fc_lane',
+        get_flowcell_lanes = os.path.join("scripts", "get_flowcell_lanes.py"),
+    shell: """
+    module load python/2.7
+    python {params.get_flowcell_lanes} \\
+        {input.r1} \\
+        {wildcards.samples} > {output.txt}
+    """
+
+
+rule fastq_screen:
+    """
+    Quality-control step to screen for different sources of contamination.
+    FastQ Screen compares your sequencing data to a set of different reference
+    genomes to determine if there is contamination. It allows a user to see if
+    the composition of your library matches what you expect.
+    @Input:
+        Trimmed FastQ files (scatter)
+    @Output:
+        FastQ Screen report and logfiles
+    """
+    input:
+        fq1 = os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz"),
+        fq2 = os.path.join(output_fqdir,"{samples}.R2.trimmed.fastq.gz")
+    output:
+        txt1 = os.path.join(output_qcdir,"FQscreen","{samples}.R1.trimmed_screen.txt"),
+        txt2 = os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.txt"),
+        png1 = os.path.join(output_qcdir,"FQscreen","{samples}.R1.trimmed_screen.png"),
+        png2 = os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.png")
+    params:
+        rname  = "pl:fqscreen",
+        outdir = os.path.join(output_qcdir,"FQscreen"),
+        # Exposed Parameters: modify resources/fastq_screen.conf to change 
+        # default locations to bowtie2 indices
+        fastq_screen_config = config['references']['FASTQ_SCREEN_CONFIG'],
+    threads: 24
+    shell: """
+    module load fastq_screen/0.14.1
+    fastq_screen --conf {params.fastq_screen_config} \\
+        --outdir {params.outdir} \\
+        --threads {threads} \\
+        --subset 1000000 \\
+        --aligner bowtie2 \\
+        --force \\
+        {input.fq1} {input.fq2}
+    """
+
+
+rule kraken:
+    """
+    Quality-control step to assess for potential sources of microbial contamination.
+    If there are high levels of microbial contamination, Kraken will provide an
+    estimation of the taxonomic composition. Kraken is used in conjunction with
+    Krona to produce an interactive reports.
+    @Input:
+        Trimmed FastQ files (scatter)
+    @Output:
+        Kraken logfile and interative krona report
+    """
+    input:
+        fq1 = os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz"),
+        fq2 = os.path.join(output_fqdir,"{samples}.R2.trimmed.fastq.gz")
+    output:
+        out  = os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.out.txt"),
+        taxa = os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.taxa.txt"),
+        html = os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"),
+    params:
+        rname  ='pl:kraken',
+        outdir = os.path.join(output_qcdir, "kraken"),
+        bacdb  = config['references']['KRAKENBACDB'],
+    threads: 24
+    shell: """
+    module load kraken/2.1.2
+    module load kronatools/2.8
+    # Copy kraken2 db to local node storage to reduce filesystem strain
+    cp -rv {params.bacdb} /lscratch/$SLURM_JOBID/
+    kdb_base=$(basename {params.bacdb})
+    kraken2 --db /lscratch/$SLURM_JOBID/${{kdb_base}} \\
+        --threads {threads} --report {output.taxa} \\
+        --output {output.out} \\
+        --gzip-compressed \\
+        --paired {input.fq1} {input.fq2}
+    # Generate Krona Report
+    cut -f2,3 {output.out} | \\
+        ktImportTaxonomy - -o {output.html}
+    """
+
+
 rule fastqc_bam:
     """
     Quality-control step to assess sequencing quality of each sample.
@@ -1238,7 +1344,7 @@ rule fastqc_bam:
         FastQC report and zip file containing sequencing quality information
     """
     input:
-        bam = os.path.join(output_bamdir,"{samples}.bam"),
+        bam = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
     output:
         zipfile =  os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"),
         report  =  os.path.join(output_qcdir,"{samples}.recal_fastqc.html")
@@ -1250,9 +1356,9 @@ rule fastqc_bam:
     shell: """
     module load fastqc/0.11.9
     fastqc -t {threads} \\
-           -f bam \\
-           -o {params.outdir} \\
-           {input.bam} 
+        -f bam \\
+        -o {params.outdir} \\
+        {input.bam} 
     """
 
 
@@ -1268,7 +1374,7 @@ rule qualimap_bamqc:
         Report containing post-aligment quality-control metrics
     """
     input:
-        bam  = os.path.join(output_bamdir,"{samples}.bam"),
+        bam  = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
     output: 
         txt  = os.path.join(output_qcdir,"{samples}","genome_results.txt"),
         html = os.path.join(output_qcdir,"{samples}","qualimapReport.html")
@@ -1281,14 +1387,14 @@ rule qualimap_bamqc:
     module load qualimap/2.2.1
     unset DISPLAY
     qualimap bamqc -bam {input.bam} \\
-                   --java-mem-size=48G \\
-                   -c -gd hg19 -ip \\
-                   -outdir {params.outdir} \\
-                   -outformat HTML \\
-                   -nt {threads} \\
-                   --skip-duplicated \\
-                   -nw 500 \\
-                   -p NON-STRAND-SPECIFIC
+        --java-mem-size=48G \\
+        -c -gd hg19 -ip \\
+        -outdir {params.outdir} \\
+        -outformat HTML \\
+        -nt {threads} \\
+        --skip-duplicated \\
+        -nw 500 \\
+        -p NON-STRAND-SPECIFIC
     """
 
 
@@ -1304,7 +1410,7 @@ rule samtools_flagstats:
         Text file containing alignment statistics
     """
     input:
-        bam  = os.path.join(output_bamdir,"{samples}.bam"),
+        bam  = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
     output:
         txt  = os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt")
     params: 
@@ -1365,12 +1471,100 @@ rule collectvariantcallmetrics:
     shell: """
     module load picard/2.20.8
     java -Xmx24g -jar ${{PICARDJARPATH}}/picard.jar \\
-            CollectVariantCallingMetrics \\
-            INPUT={input.vcf} \\
-            OUTPUT={params.prefix} \\
-            DBSNP={params.dbsnp} Validation_Stringency=SILENT
+        CollectVariantCallingMetrics \\
+        INPUT={input.vcf} \\
+        OUTPUT={params.prefix} \\
+        DBSNP={params.dbsnp} Validation_Stringency=SILENT
     """
 
+
+rule bcftools_stats:
+    """
+    Quality-control step to collect summary statistics from bcftools stats.
+    When bcftools stats is run with one VCF file then stats by non-reference
+    allele frequency, depth distribution, stats by quality and per-sample 
+    counts, singleton statsistics are calculated. Please see bcftools' 
+    documentation for more information: 
+    http://samtools.github.io/bcftools/bcftools.html#stats
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Text file containing a collection of summary statistics
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"),
+    output: 
+        txt = os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"),
+    params: 
+        rname="bcfstats",
+    shell: """
+    module load bcftools/1.9
+    bcftools stats {input.vcf} > {output.txt}
+    """
+
+rule gatk_varianteval:
+    """
+    Quality-control step to calculate various quality control metrics from a 
+    variant callset. These metrics include the number of raw or filtered SNP 
+    counts; ratio of transition mutations to transversions; concordance of a
+    particular sample's calls to a genotyping chip; number of s per sample.
+    Please see GATK's documentation for more information: 
+    https://gatk.broadinstitute.org/hc/en-us/articles/360040507171-VariantEval
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), 
+    output: 
+        grp = os.path.join(output_qcdir,"{samples}.germline.eval.grp"),
+    params:
+        rname    = "vareval",
+        genome   = config['references']['GENOME'],
+        dbsnp    = config['references']['DBSNP'],
+        ver_gatk = config['tools']['gatk4']['version']
+    threads: 16
+    shell: """
+    module load GATK/{params.ver_gatk}
+    gatk --java-options '-Xmx12g -XX:ParallelGCThreads={threads}' VariantEval \\
+        -R {params.genome} \\
+        -O {output.grp} \\
+        --dbsnp {params.dbsnp} \\
+        --eval {input.vcf} 
+    """
+
+
+rule snpeff:
+    """
+    Data processing and quality-control step to annotate variants, predict its
+    functional effects, and collect various summary statistics about variants and
+    their annotations. Please see SnpEff's documentation for more information: 
+    https://pcingola.github.io/SnpEff/
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input:  
+        vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz")
+    output: 
+        vcf  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.vcf"),
+        csv  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.csv"),
+        html = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"),
+    params: 
+        rname  = "snpeff",
+        genome = config['references']['SNPEFF_GENOME'],
+        config = config['references']['SNPEFF_CONFIG']
+    shell: """
+    module load snpEff/4.3t
+    java -Xmx12g -jar $SNPEFF_JAR \\
+        -v -canon -c {params.config} \\
+        -csvstats {output.csv} \\
+        -stats {output.html} \\
+        {params.genome} \\
+        {input.vcf} > {output.vcf}
+    """
   
 rule somalier_relatedness:
     input:
@@ -1426,98 +1620,4 @@ rule somalier_analysis:
             
             Rscript {params.script_path_pca} {input.somalierAncestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
     """
-    
-# rule genderPrediction:
-#     input: 
-#             somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
-#     output: finalFile=os.path.join(output_germline_base,"predicted.genders.tsv")
-#     params: ver_R=config['tool_versions']['R_v4'],
-#             script_path=config['scripts']['genderPrediction'],
-#             rname = "genderPrediction"
-#     shell: """
-#             module load R/{params.ver_R}
-#             Rscript {params.script_path} {input.somalierSamples} {output.finalFile}
-#     """
-#     
-# rule verifyBAMID:
-#     input:  bam=(os.path.join(output_bamdir,"{samples}.recal.bam")),
-#             bai=(os.path.join(output_bamdir,"{samples}.recal.bam.bai"))
-#     output: result=os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry")
-#     params: sample="{samples}",ver_singularity=config['tool_versions']['ver_singularity'],resource=config['references']['VERIFYBAMID']['RESOURCE'],container=config['references']['VERIFYBAMID']['CONTAINER'],
-#             genomeFasta=config['references']['GENOME'],rname="pl:verifyBAM"
-#     # threads: 32
-#     shell:  """ 
-#         module load singularity
-# 	    bam={input.bam}
-#         BAM_BASE=$(basename $bam)
-# 	    sampleName={params.sample}
-#         OUT_DIR=$(dirname {output.result})
-#         #mkdir -p $OUT_DIR
-# 	    BAM_DIR=$(dirname $bam)
-#         GENOME_FASTA_DIR=$(dirname {params.genomeFasta})
-#         GENOME_FASTA_NAME=$(basename {params.genomeFasta})
-#         CONTAINER={params.container}
-#         VerifyBAMIDPath={params.resource}
-#         VERIFYBAMID_CMDS="date;
-#                         VerifyBamID --NumPC 4 --SVDPrefix /VerifyBamID/resource/1000g.phase3.10k.b38.vcf.gz.dat --BamFile  /VerifyBamID/localDirectory/$BAM_BASE --Reference  /Reference/$GENOME_FASTA_NAME --Output /VerifyBamID/outputDir/$sampleName;
-#                         date;"
-#                                   ## Run the commands in the image with binded paths to input/output files
-#                                   singularity exec --bind $BAM_DIR:/VerifyBamID/localDirectory \
-#                                                    --bind $OUT_DIR:/VerifyBamID/outputDir \
-#                                                    --bind $VerifyBAMIDPath:/VerifyBamID/resource/ \
-#                                                    --bind $bam:/mnt/bam \
-#                                                    --bind $GENOME_FASTA_DIR:/Reference/ \
-#                                                    $CONTAINER \
-#                                                    /bin/sh -c "$VERIFYBAMID_CMDS"
-#         outputFile={output.result}
-#         if [ -f "$outputFile" ]; then
-#             echo "$outputFile exists."
-#         else 
-#             echo "$outputFile does not exist. Creating one"
-#             #touch $outputFile
-#             obj="PC\\tContaminatingSample\\tIntendedSample\\n1\\tNA\\tNA\\n2\\tNA\\tNA\\n3\\tNA\\tNA\\n4\\tNA\\tNA"
-#             echo -e $obj > $outputFile
-#         fi
-#             
-#             """
-#         
-# rule verifyBAMID_results_merge:
-#     input:
-#         expand(os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry"), samples=samples),
-#     output:
-#         list = os.path.join(output_germline_base,"verifyBAMID","allAncestorySamples.txt"),
-#         finalPairs = os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
-#     params:
-#         ver_R=config['tool_versions']['R_v4'],rname = "merge_verifyBAMID"
-#     shell:
-#         """
-#         module load R/{params.ver_R}
-#         ls -d $(dirname "{output.list}")/*.Ancestry > "{output.list}"
-#         ##Run the RScript to create the pair file
-#         Rscript RScripts/combineVerifyBAMIDResults.R {output.list} {output.finalPairs}
-#         """
-        
-# rule combineSampleCompareResults:
-#     input: 
-#            somalier=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
-#            #verifyBAM=os.path.join(output_germline_base,"verifyBAMID","IntendedSamplesPCs.cor.pairs.tsv"),
-#     output: finalFile=os.path.join(output_germline_base,"predicted.pairs.tsv")
-#     params: ver_R=config['tool_versions']['R_v4'],
-#             script_path=config['scripts']['combineAncestry'],
-#             rname = "combineSampleCompareResults"
-#     shell: """
-#             module load R/{params.ver_R}
-#             Rscript RScripts/combineAllSampleCompareResults.R {input.somalier} {output.finalFile}
-#     """
-#     
-# rule plotAncestry:
-#     input: ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
-#            predictedPairs=os.path.join(output_germline_base,"predicted.pairs.tsv")
-#     output: ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
-#             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
-#     params: ver_R=config['tool_versions']['R_v4'],rname = "plotAncestry"
-#     shell: """
-#             module load R/{params.ver_R}
-#             Rscript RScripts/sampleCompareAncestoryPlots.R {input.ancestry} {input.predictedPairs} {output.ancestoryPlot} {output.pairAncestoryHist}
-#     """
-        
+
