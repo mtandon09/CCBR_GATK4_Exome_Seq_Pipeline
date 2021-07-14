@@ -1,14 +1,14 @@
 {
     "input_params": {
       "FASTQ_SOURCE": "",
-      "BAM_SOURCE": "/data/CCBR/projects/ccbr1092/bam_links",
+      "BAM_SOURCE": "",
       "PAIRS_FILE": "",
       "VARIANT_CALLERS": ["mutect2","mutect","vardict","varscan"],
-      "BASE_OUTDIR": "tn_out_1",
+      "BASE_OUTDIR": "tonly_out_1",
       "OTHER_SOMATIC_VCFS": {},
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
       "GERMLINE": "false",
-      "FFPE_FILTER": "true",
+      "FFPE_FILTER": "false",
       "CNV_CALLING": "false"
     },
     "input_params_test": {
@@ -32,6 +32,8 @@
     },
     "references": {
         "fastqc_adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/fastqc.adapters",
+        "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
+        "KRAKENBACDB": "/fdb/kraken/20180907_standard_kraken2",
         "trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
@@ -60,7 +62,25 @@
         "ADMIXTUREREFS": "5",
         "MAF_FILTERVCF": "/data/CCBR_Pipeliner/db/PipeDB/lib/ExAC_nonTCGA.r0.3.1.sites.vep.GRCh38.vcf.gz",
         "MAF_GENOME": "hg38",
-        "ORGANISM": "HUMAN"
+        "VCF2MAF": {
+            "CONTAINER": "/data/CCBR_Pipeliner/db/PipeDB/db/SingularityImages/ccbr_vcf2maf_v0.1.0.sif",
+            "VEPRESOURCEBUNDLEPATH": "/data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        },
+        "SOMALIER":{
+            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/somalier/somalier.simg",
+            "ANCESTRY_DB": "/data/tandonm/pl_test_data/human/resources/somalier/1kg-somalier",
+            "SITES_VCF": "/data/tandonm/pl_test_data/human/resources/somalier/sites.hg38.vcf.gz",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        },
+        "VERIFYBAMID":{
+            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/verifybamid/verifybamid2_latest.sif",
+            "RESOURCE": "/data/tandonm/pl_test_data/human/resources/verifybamid/resource/",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        }
     },
     "scripts": {
         "vcf2maf_wrapper": "/data/tandonm/pl_test_data/human/other/vcf2maf_wrapper.bash",
