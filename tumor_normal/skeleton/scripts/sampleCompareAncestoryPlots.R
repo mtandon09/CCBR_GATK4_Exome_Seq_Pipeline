@@ -13,7 +13,7 @@ user.input.4=args[4]
 t<-read.table(user.input.1,sep = "\t",header = T,comment.char = "")
 pairs<-read.table(user.input.2,sep = "\t",header = T)
 pairs<-pairs %>% mutate(key = paste0(pmin(Sample1, Sample2), pmax(Sample1, Sample2), sep = ""))
-pairs<-pairs[duplicated(pairs[,"key"]),]
+pairs<-pairs[!duplicated(pairs[,"key"]),]
 samples<-unique(c(pairs$Sample1,pairs$Sample2))
 
 mapping<-list("EUR"="European","EAS"="East Asian","AMR"="American","SAS"="South Asian","AFR"="African")
