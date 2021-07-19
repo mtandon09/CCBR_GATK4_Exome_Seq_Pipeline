@@ -308,7 +308,7 @@ rule all:
         expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
-
+        os.path.join(output_qcdir,"MultiQC_Report.html"),
 
         # os.path.join(merge_outdir,"maf","merged_oncoplot.pdf"),
         # os.path.join("mutect_out","maf","mutect_oncoplot.pdf"),
@@ -1644,4 +1644,43 @@ rule snpeff:
         -stats {output.html} \\
         {params.genome} \\
         {input.vcf} > {output.vcf}
+    """
+
+
+rule multiqc:
+    """
+    Reporting step to aggregate sample summary statistics and quality-control
+    information across all samples. This will be one of the last steps of the 
+    pipeline. The inputs listed here are to ensure that this step runs last. 
+    During runtime, MultiQC will recurively crawl through the working directory
+    and parse files that it supports.
+    @Input:
+        List of files to ensure this step runs last (gather)
+    @Output:
+        Interactive MulitQC report and a QC metadata table
+    """
+    input:  
+        expand(os.path.join(output_fqdir,"{samples}.fastq.info.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
+        os.path.join(output_qcdir,"raw_variants.het"), 
+        os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+    output: 
+        report  = os.path.join(output_qcdir,"MultiQC_Report.html"),
+    params: 
+        rname  = "multiqc",
+        workdir = os.path.join(BASEDIR)
+    shell: """
+    module load multiqc/1.11
+    multiqc --ignore '*/.singularity/*' \\
+        --ignore '*/*/*/*/*/*/*/*/pyflow.data/*' \\
+        -f --interactive \\
+        -n {output.report} \\
+        {params.workdir}
     """
