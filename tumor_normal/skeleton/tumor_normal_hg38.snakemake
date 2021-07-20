@@ -289,7 +289,7 @@ rule all:
         expand(os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.tumor.contamination.table"), samples=pairs_ids),
         
         expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
-        #expand(os.path.join(output_germline_base,"verifyBAMID","{samples}.Ancestry"), samples=samples),
+        os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
         os.path.join(output_germline_base,"predicted.pairs.tsv"),
         os.path.join(output_germline_base,"predicted.genders.tsv"),
         os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
@@ -1130,7 +1130,7 @@ rule somalier_relatedness:
     output:
         relatedness=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
         relatednessSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
-        ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+        ancestry=os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
     params: ver_singularity=config['tool_versions']['ver_singularity'],ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
             sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_relatedness"
     shell:  """
@@ -1236,7 +1236,7 @@ rule combineSampleCompareResults:
     """
     
 rule plotAncestry:
-    input: ancestry=os.path.join(output_germline_base,"somalier","ancestry.tsv"),
+    input: ancestry=os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
            predictedPairs=os.path.join(output_germline_base,"predicted.pairs.tsv")
     output: ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
@@ -1671,6 +1671,7 @@ rule multiqc:
         expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
         os.path.join(output_qcdir,"raw_variants.het"), 
         os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+        os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
     output: 
         report  = os.path.join(output_qcdir,"MultiQC_Report.html"),
     params: 
