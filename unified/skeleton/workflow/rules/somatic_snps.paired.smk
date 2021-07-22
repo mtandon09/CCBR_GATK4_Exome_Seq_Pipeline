@@ -79,10 +79,12 @@ rule contamination_paired:
     input: tumor=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_tumor.pileup.table"),
            normal=os.path.join(output_somatic_snpindels,"mutect2_out","pileup_summaries","{samples}_normal.pileup.table"),
     output: tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
+            normal_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}_normal.contamination.table")
     params: normalsample=lambda w: [pairs_dict[w.samples]],tumorsample="{samples}",genome=config['references']['GENOME'],ver_gatk=config['tools']['gatk4']['version'],rname="contamination"
     shell: """
            module load GATK/{params.ver_gatk}
            gatk CalculateContamination -I {input.tumor} --matched-normal {input.normal} -O {output.tumor_summary}
+           gatk CalculateContamination -I {input.normal} -O {output.normal_summary}
            """
 
 rule mutect2_filter:
@@ -259,8 +261,8 @@ rule vardict_filter:
 rule varscan:
        input:  normal = lambda w: [os.path.join(output_bamdir,"chrom_split",pairs_dict[w.samples] + ".{chroms}.split.bam")],
                tumor=os.path.join(output_bamdir,"chrom_split","{samples}.{chroms}.split.bam"),
-               tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.tumor.contamination.table"),
-               normal_summary=lambda w: [os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.normal.contamination.table")],
+               tumor_summary=os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"),
+               normal_summary=lambda w: [os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}_normal.contamination.table")],
                # sequenza_purity=os.path.join(output_somatic_cnv,"sequenza_out","{samples}_alternative_solutions.txt")
        output: vcf=os.path.join(output_somatic_snpindels,"varscan_out","chrom_split","{samples}.{chroms}.vcf"),
                # samplesfile=os.path.join(output_somatic_snpindels,"varscan_out","vcf","{samples}.samples")
