@@ -4,7 +4,7 @@
       "BAM_SOURCE": "",
       "TN_MODE": "auto",
       "PAIRS_FILE": "",
-      "VARIANT_CALLERS": ["mutect2","mutect"],
+      "VARIANT_CALLERS": ["mutect2","vardict","mutect","varscan"],
       "BASE_OUTDIR": "tonly_out_1",
       "OTHER_SOMATIC_VCFS": {},
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
