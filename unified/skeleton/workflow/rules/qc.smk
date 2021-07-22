@@ -209,8 +209,8 @@ rule fastqc_bam:
     input:
         bam = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
     output:
-        zipfile =  os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"),
-        report  =  os.path.join(output_qcdir,"{samples}.recal_fastqc.html")
+        zipfile =  os.path.join(output_qcdir,"{samples}_fastqc.zip"),
+        report  =  os.path.join(output_qcdir,"{samples}_fastqc.html")
     params:
         outdir = output_qcdir,
         rname  = "fastqc_bam",
@@ -446,7 +446,7 @@ rule multiqc:
         expand(os.path.join(output_fqdir,"{samples}.fastq.info.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"), samples=samples),
-        expand(os.path.join(output_qcdir,"{samples}.recal_fastqc.zip"), samples=samples),
+        expand(os.path.join(output_qcdir,"{samples}_fastqc.zip"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
