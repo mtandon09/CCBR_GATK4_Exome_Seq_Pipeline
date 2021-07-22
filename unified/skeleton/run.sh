@@ -17,7 +17,7 @@ parser.add_argument('--dryrun',required=False, default='', help='Dry-run only (p
 parser.add_argument('--unlock',required=False, default='', help='Unlock working directory (provide any non-empty string)')
 parser.add_argument('--until',required=False,  default='', help='Rule name to stop at; passed to snakemake\'s \'--until\' argument')
 parser.add_argument('--local',required=False,  default='', help='Number of jobs to run in parallel locally; does not submit to slurm, so only use on an interactive node')
-parser.add_argument('--slurmdir',required=False, default='slurmfiles', help='Path to output slurm files to')
+parser.add_argument('--slurmdir',required=False, default='', help='Path to output slurm files to')
 parser.add_argument('--rulegraph',required=False, default='', help='Path to a PNG file to which the rules DAG will be written')
 parser.add_argument('--report',required=False, default='', help='Path to an HTML file to which the snakemake report will be written')
 parser.add_argument('--config',required=False, default='', help='Manually set the \'input_params\' section of the snakemake config file. Overrides any [input_params] arguments.')
@@ -74,6 +74,7 @@ if [ ! -z $REPORT ]; then
     exit 0
 fi
 
+if [ -z $SLURMDIR ]; then SLURMDIR="$OUTDIR/slurmfiles"; fi
 if [ ! -d $SLURMDIR ]; then mkdir -p $SLURMDIR; fi
 
 CLUSTER_OPTS="sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --job-name={params.rname} -e $SLURMDIR/slurm-%j_{params.rname}.out -o $SLURMDIR/slurm-%j_{params.rname}.out";
