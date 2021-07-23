@@ -1,0 +1,380 @@
+#### Add some useful header
+
+import os
+from os import listdir
+# from os.path import join
+import pandas as pd
+import re
+import sys
+import glob
+import datetime
+
+## FROM: https://github.com/skchronicles/RNA-seek/blob/main/rna-seek
+def rename(filename):
+    """Dynamically renames FastQ file to have one of the following extensions: *.R1.fastq.gz, *.R2.fastq.gz
+    To automatically rename the fastq files, a few assumptions are made. If the extension of the
+    FastQ file cannot be infered, an exception is raised telling the user to fix the filename
+    of the fastq files.
+    @param filename <str>:
+        Original name of file to be renamed
+    @return filename <str>:
+        A renamed FastQ filename
+    """
+    import re
+
+    # Covers common extensions from SF, SRA, EBI, TCGA, and external sequencing providers
+    # key = regex to match string and value = how it will be renamed
+    extensions = {
+        # Matches: _S[##]_R[12]_fastq.gz, _S[##]_R[12].fastq.gz, _R[12]_fq.gz; works for exome fqs from SF
+        "_S[0-9]+_R1_001.f(ast)?q.gz$": ".R1.fastq.gz",
+        "_S[0-9]+_R2_001.f(ast)?q.gz$": ".R2.fastq.gz",
+        # Matches: _R[12]_fastq.gz, _R[12].fastq.gz, _R[12]_fq.gz, etc.
+        ".R1.f(ast)?q.gz$": ".R1.fastq.gz",
+        ".R2.f(ast)?q.gz$": ".R2.fastq.gz",
+        # ".R1(?<!\.trimmed).f(ast)?q.gz$": ".R1.fastq.gz",
+        # ".R2(?<!\.trimmed).f(ast)?q.gz$": ".R2.fastq.gz",
+        # Matches: _R[12]_001_fastq_gz, _R[12].001.fastq.gz, _R[12]_001.fq.gz, etc.
+        # Capture lane information as named group
+        ".R1.(?P<lane>...).f(ast)?q.gz$": ".R1.fastq.gz",
+        ".R2.(?P<lane>...).f(ast)?q.gz$": ".R2.fastq.gz",
+        # Matches: _[12].fastq.gz, _[12].fq.gz, _[12]_fastq_gz, etc.
+        "_1.f(ast)?q.gz$": ".R1.fastq.gz",
+        "_2.f(ast)?q.gz$": ".R2.fastq.gz",
+        ####
+        # Matches: *.bam if it's not preceded by '.recal' (i.e. match '.bam' exactly)
+        "(?<!\.recal)\.bam$": ".input.bam",
+        "\.recal\.bam$": ".input.bam"
+    }
+
+    if filename.endswith('.R1.fastq.gz') or filename.endswith('.R2.fastq.gz'):
+        # Filename is already in the correct format
+        return filename
+
+    converted = False
+    for regex, new_ext in extensions.items():
+        matched = re.search(regex, filename)
+        if matched:
+            # regex matches with a pattern in extensions
+            converted = True
+            # Try to get substring for named group lane, retain this in new file extension
+            # Come back to this later, I am not sure if this is necessary
+            # That string maybe static (i.e. always the same)
+            # https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm#
+            try: new_ext = "_{}{}".format(matched.group('lane'), new_ext)
+            except IndexError: pass # Does not contain the named group lane
+
+            filename = re.sub(regex, new_ext, filename)
+            break # only rename once
+
+    if not converted:
+        raise NameError("""\n\tFatal: Failed to rename provided input '{}'!
+        Cannot determine the extension of the user provided input file.
+        Please rename the file list above before trying again.
+        Here is example of acceptable input file extensions:
+          sampleName.R1.fastq.gz      sampleName.R2.fastq.gz
+          sampleName_R1_001.fastq.gz  sampleName_R1_001.fastq.gz
+          sampleName_1.fastq.gz       sampleName_2.fastq.gz
+        Please also check that your input files are gzipped?
+        If they are not, please gzip them before proceeding again.
+        """.format(filename, sys.argv[0])
+        )
+
+    return filename
+
+## FROM: https://github.com/skchronicles/RNA-seek/blob/main/rna-seek
+def _sym_safe_(input_data, target):
+    """Creates re-named symlinks for each FastQ file provided
+    as input. If a symlink already exists, it will not try to create a new symlink.
+    If relative source PATH is provided, it will be converted to an absolute PATH.
+    @param input_data <list[<str>]>:
+        List of input files to symlink to target location
+    @param target <str>:
+        Target path to copy templates and required resources
+    @return input_fastqs list[<str>]:
+        List of renamed input FastQs
+    """
+    input_fastqs = [] # store renamed fastq file names
+    for file in input_data:
+        filename = os.path.basename(file)
+        renamed = os.path.join(target, rename(filename))
+        input_fastqs.append(renamed)
+
+        if not os.path.exists(renamed):
+            # Create a symlink if it does not already exist
+            # Follow source symlinks to resolve any binding issues
+            os.symlink(os.path.abspath(os.path.realpath(file)), renamed)
+
+    return input_fastqs
+
+def read_pairsfile(tn_mode="auto", pairs_filepath="", sample_names=[]):    
+    ## Make sure tn_mode is valid
+    if not tn_mode in ["auto","paired","tumor_only"]:
+        raise NameError("""\n\tFatal: tn_mode must be one of 'auto', 'paired', or 'tumor_only'
+        Argument received: {}
+        """.format(tn_mode, sys.argv[0])
+        )
+    
+    ## Initialize some empty variables
+    tumor_ids = []
+    normal_ids = []
+    paired_ids={}
+    
+    ## If pairs file exists, try to use it
+    if os.path.isfile(pairs_filepath):
+        ## Read pairs file as data frame
+        df = pd.read_csv(pairs_filepath, header=0, sep='\t')
+        df.columns = df.columns.str.lower() ## Make column names case-insensitive
+        
+        ## Make sure it contains a "tumor" column
+        if not "tumor" in df:
+            raise NameError("""\n\tFatal: Pairs file must contain at least a 'tumor' column
+            Columns found: {}
+            """.format(df.columns.tolist(), sys.argv[0])
+            )
+        
+        df = df[pd.notna(df["tumor"])] ## Remove rows where tumor id is empty/na
+        tumor_ids = df["tumor"]
+        
+        if "normal" in df:
+            normal_ids = df["normal"]
+        
+        ## Make sure normal ids are not empty/na
+        if any(pd.notna(normal_ids)):
+            t_pair=tumor_ids[pd.notna(normal_ids)]
+            n_pair=normal_ids[pd.notna(normal_ids)]
+            paired_ids=dict(zip(t_pair.tolist(), n_pair.tolist()))    
+    
+    ## If pairs file not found, try to use provided sample names as tumor-only IDs
+    else:
+        if tn_mode == "paired":
+            print("WARNING: Paired mode selected without a valid pairs file!!!")
+            
+        if not sample_names:
+            raise NameError("""\n\tFatal: Either a valid pairs file or sample names must be provided.
+            Pairs file path provided: {}
+            Sample names provided: {}
+            """.format(pairs_filepath, sample_names, sys.argv[0])
+            )
+        else:
+            tumor_ids=sample_names
+    
+    ## Overlap with given sample names
+    if sample_names:
+        overlapped_pairs = {k: paired_ids[k] for k in sample_names if k in paired_ids}
+        overlapped_tumors = list(set(tumor_ids) & set(sample_names))
+        
+        print(str(len(overlapped_pairs)) + " of " + str(len(paired_ids)) + " pairs in pairs file matched given sample names")
+        print(str(len(overlapped_tumors)) + " of " + str(len(tumor_ids)) + " tumors in pairs file matched given sample names")
+        
+        paired_ids=overlapped_pairs
+        tumor_ids=overlapped_tumors
+    
+    out_dict={"paired":paired_ids, "tumor_only": dict.fromkeys(set(tumor_ids))}
+    
+    if tn_mode=="paired":
+        out_dict["tumor_only"]=[]
+    elif tn_mode=="tumor_only":
+        out_dict["paired"]=[]
+    
+    return(out_dict)
+
+configfile:"config/config.json"
+
+
+######### PARSE CONFIG PARAMS #########
+TN_MODE=config['input_params']['TN_MODE']
+exome_targets_bed=config['input_params']['EXOME_TARGETS']
+BASEDIR=os.path.realpath(config['input_params']['BASE_OUTDIR'])
+
+input_fqdir=os.path.join(BASEDIR,"input_files","fastq")
+fq_source=config['input_params']['FASTQ_SOURCE']
+fqs_found=glob.glob(os.path.join(fq_source,'*.fastq.gz'))
+
+input_bamdir=os.path.join(BASEDIR,"input_files","bam")
+bam_source=os.path.join(config['input_params']['BAM_SOURCE'])
+bams_found=glob.glob(os.path.join(bam_source,'*.bam'))
+
+output_fqdir=os.path.join(BASEDIR,config['output_params']['FASTQ'])
+output_bamdir=os.path.join(BASEDIR,config['output_params']['BAM'])
+output_qcdir=os.path.join(BASEDIR,"QC")
+
+VCF2MAF_WRAPPER=config['scripts']['vcf2maf_wrapper']
+SOBDetector_out=os.path.join(BASEDIR,"ffpe_filter","sobdetector")
+SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile","SOBDetector_v1.0.2.jar")
+
+name_symlinks=[]
+if fqs_found:
+    name_suffix=".R[1,2].fastq.gz"
+    if not os.path.exists(input_fqdir):
+        # print("making"+output_fqdir)
+        os.makedirs(input_fqdir) 
+        name_symlinks=_sym_safe_(fqs_found, input_fqdir)
+    else:
+        name_symlinks=glob.glob(os.path.join(input_fqdir,'*.fastq.gz'))
+elif bams_found:
+    name_suffix=".input.bam"
+    if not os.path.exists(input_bamdir):
+        os.makedirs(input_bamdir) 
+    if (len(os.listdir(input_bamdir))==0):
+        bam_symlinks=_sym_safe_(bams_found, input_bamdir)
+    name_symlinks=glob.glob(os.path.join(input_bamdir,'*.input.bam'))
+else:
+    raise NameError("""\n\tFatal: No relevant files found in the BAM or FASTQ directory!
+        FASTQ source path provided: {}
+        BAM source path provided: {}
+        Folders should contain files ending with '.fastq.gz' or '.bam' respectively.
+        """.format(fq_source, bam_source, sys.argv[0])
+    )
+
+samples = set([re.sub(name_suffix,"",os.path.basename(fname)) for fname in name_symlinks]) ## Only returns paired fqs
+
+pairs_file = config['input_params']['PAIRS_FILE']
+
+# tn_mode="tumor_only"
+tn_mode=config['input_params']['TN_MODE']
+print(tn_mode)
+# if 'TN_MODE' in config['input_params']:
+#     tn_mode=config['input_params']['TN_MODE']
+#     print(tn_mode)
+#     if tn_mode=="auto":
+#         if os.path.isfile(pairs_file):
+#             tn_mode="paired"
+
+tn_mode=config['input_params']['TN_MODE']
+sample_info=read_pairsfile(tn_mode=tn_mode, pairs_filepath=pairs_file, sample_names=samples)
+# print(sample_info)
+
+if tn_mode=="auto":
+    if sample_info["paired"]:
+        tn_mode="paired"
+    else:
+        tn_mode="tumor_only"
+
+# print(tn_mode)
+# exit
+pairs_dict=sample_info[tn_mode]
+pairs_ids=list(pairs_dict.keys())
+
+output_germline_base=os.path.join(BASEDIR,"germline")
+output_somatic_base=os.path.join(BASEDIR,"somatic_"+tn_mode)
+output_somatic_snpindels=os.path.join(output_somatic_base,"SNP_Indels")
+output_somatic_cnv=os.path.join(output_somatic_base,"CNV")
+
+chroms = ["chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY","chrM"]
+intervals_file=os.path.join(BASEDIR,"intervals.list")
+if not os.path.isfile(intervals_file):
+    with open(intervals_file, 'w') as f:
+        f.write("\n".join(chroms))
+        f.close
+
+# caller_dict=config['output_params']['SOMATIC_VCF']
+caller_list=[caller_name.lower() for caller_name in config['input_params']['VARIANT_CALLERS']]
+caller_list=list(set(caller_list) & set(config['available_somatic_callers'][tn_mode]))
+
+if not caller_list:
+    raise NameError("""\n\tFatal: Must define one or more variant caller!
+        """.format(fq_source, input_bamdir, sys.argv[0])
+    )
+
+merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']
+somatic_callers_dirs = [caller + "_out" for caller in list(caller_list)]
+
+samples_for_caller_merge=[]
+merge_callers_args=dict.fromkeys(pairs_ids)
+merge_callers_rodlist=",".join(caller_list)
+if (len(caller_list) > 1):
+    merge_callers_args_list = [["--variant:{} {}/{}/{}.FINAL.vcf".format(re.sub("_out","",vc_out), os.path.join(output_somatic_snpindels, vc_out),"vcf",pair_id) for vc_out in somatic_callers_dirs] for pair_id in pairs_ids]
+    merge_callers_args = dict(zip(pairs_ids, [" ".join(arglist) for arglist in merge_callers_args_list]))
+    samples_for_caller_merge=pairs_ids
+    somatic_callers_dirs=list(somatic_callers_dirs + [merge_outdir])
+
+VCF2MAF_WRAPPER=config['scripts']['vcf2maf_wrapper']
+SOBDetector_out=os.path.join(output_somatic_base,"ffpe_filter","sobdetector")
+SOBDetector_JARFILE=os.path.join(SOBDetector_out, "jarfile","SOBDetector_v1.0.2.jar")
+
+exome_targets_bed=config['input_params']['EXOME_TARGETS']
+
+ffpe_caller_list=[]
+ffpe_sample_list=[]
+if 'FFPE_FILTER' in config['input_params']:
+    if config['input_params']['FFPE_FILTER'].lower() in ['true','t','yes']:
+        ffpe_caller_list=somatic_callers_dirs
+        ffpe_sample_list=pairs_ids
+
+cnv_sample_list=[]
+if 'CNV_CALLING' in config['input_params']:
+    if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
+        if 'TN_MODE' in config['input_params']:
+            if config['input_params']['TN_MODE'].lower() in ['paired','tumor_normal']:
+                cnv_sample_list=pairs_ids
+    
+# print(somatic_callers_dirs)
+# print(samples_for_caller_merge)
+# print(config['input_params']['FFPE_FILTER'].lower() )
+# print(ffpe_caller_list)
+# print(len(caller_list))
+# # print(pairs_dict)
+# print(merge_callers_args)
+# exit()
+
+#
+# Set rule all
+#
+
+rule all:
+    input:
+        expand(os.path.join(input_bamdir,"{samples}.input.bam"), samples=samples),
+        expand(os.path.join(output_bamdir,"final_bams","{samples}.bam"), samples=samples),
+        # expand(os.path.join(output_bamdir,"preprocessing","{samples}.input.bai"), samples=samples),
+        expand(os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"), samples=samples),
+
+        # expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.vcf"),samples=samples_for_caller_merge),
+        # expand(os.path.join(output_somatic_snpindels,merge_outdir,"vcf","{samples}.FINAL.norm.vcf"),samples=samples_for_caller_merge),
+        expand(os.path.join(output_somatic_snpindels,merge_outdir,"maf","{samples}.maf"),samples=samples_for_caller_merge),
+        # expand(os.path.join("{vc_outdir}","maf","{samples}.maf"), samples=pairs_ids, vc_outdir=somatic_callers),
+        
+        expand(os.path.join(output_somatic_snpindels,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=somatic_callers_dirs),
+        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), samplespairs_ids, vc_outdir=somatic_callers),
+        
+        expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"), samples=ffpe_sample_list, vc_outdir=ffpe_caller_list),
+        expand(os.path.join(SOBDetector_out,"{vc_outdir}","cohort_summary","all_somatic_variants.maf"), vc_outdir=ffpe_caller_list),
+        # expand(os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.sobdetect.vcf"), samplespairs_ids, vc_outdir=somatic_callers_dirs),
+        expand(os.path.join(SOBDetector_out,"{vc_outdir}","metrics","all_metrics.txt"), vc_outdir=ffpe_caller_list),
+        
+        
+        expand(os.path.join(output_somatic_cnv,"freec_out","pass2","{samples}.recal.bam_CNVs.p.value.txt"), samples=cnv_sample_list),
+        
+        expand(os.path.join(output_somatic_base,"qc","gatk_contamination","{samples}.contamination.table"), samples=samples_for_caller_merge),
+
+        # expand(os.path.join(output_fqdir,"{samples}.fastq.info.txt"), samples=samples),
+        # expand(os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.txt"), samples=samples),
+        # expand(os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"), samples=samples),
+        # # expand(os.path.join(output_qcdir,"{samples}_fastqc.zip"), samples=samples),
+        # expand(os.path.join(output_qcdir,"{samples}","genome_results.txt"), samples=samples),
+        # expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
+        # os.path.join(output_qcdir,"raw_variants.het"), 
+        # os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+        os.path.join(output_qcdir,"MultiQC_Report.html"),
+        
+        # expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
+        # expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
+        # expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
+
+
+
+include: "rules/trim_map_preprocess.smk"
+include: "rules/germline.smk"
+include: "rules/qc.smk"
+
+if 'CNV_CALLING' in config['input_params']:
+    if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
+        include: "rules/cnv.smk"
+
+if 'FFPE_FILTER' in config['input_params']:
+    if config['input_params']['FFPE_FILTER'].lower() in ['true','t','yes']:
+        include: "rules/ffpe.smk"
+
+if tn_mode=="paired":
+    include: "rules/somatic_snps.paired.smk"
+elif tn_mode=="tumor_only":
+    include: "rules/somatic_snps.tumor_only.smk"
