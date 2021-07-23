@@ -1,50 +1,49 @@
-# hg38 pipeline
-<a href="https://imgflip.com/i/51zfhx"><img src="https://i.imgflip.com/51zfhx.jpg" title="Waiting for snakemake"/></a>
--------------------------------------------------
-~~Currently only the **tumor_normal** pipeline is up-to-date. I'm still toying with the idea of making a unified pipeline that will run tumor-only if no pairs info is provided.~~
+# hg38 WES pipeline
 
-Both `tumor_only` and `tumor_normal` are functional.  It got too complicated to merge them together, so they are separate for now.
+The `unified` folder contains the latest workflow containing all the changes in the separate `tumor_normal` and `tumor_only` workflows from before.
 
-### Deploying
-So far, I've usually been creating a copy of the skeleton for each run. Then I either edit the config json (`references_hg38.json` *prob wanna change this filename* lol) and call snakemake manually. Or increasingly, I've built up the `run.sh` script to handle most of the things I needed during development.  Theoretically by setting the input/output options correctly, a common skeleton can be used for any number of jobs but I have not tested it thoroughly.
+Essentially, all you need to start the pipeline is a folder of gzip-ed fastq files (and a target bed file if not using Agilent SureSelect Human All Exon v7). This will run germline and somatic calling in tumor-only mode.  If a pairs file is provided, it will be run in tumor-normal mode.
 
-The defaults to watch out for or set explicitly when calling `run.sh`:
-- `pairs.tsv` is read from the skeleton folder (`--pairs` arugment)
-- Slurm output files are stored in the skeleton (`--slurmfiles` argument)
-- The snakemake log file for each submission is stored in `submit.log` in the skeleton (currently not configurable)
+## Example Run
+The test data contains 10 million randomly sampled read pairs from three human cell lines.
 
-### Config tests
-Here's some bash commmands for deploying this on Biowulf and running the config tests described [here](https://github.com/mtandon09/exome_pipeline_dev_mt/tree/main/tumor_normal/config_tests).
+Starting from FASTQ files, the basic pipeline (germline and somatic SNP calling) for this test data runs in about 4 hours. 
+
+Here's some bash commmands for deploying this on Biowulf.
+
 ```
 ## Download the repo
 git clone https://github.com/mtandon09/exome_pipeline_dev_mt.git
+cd exome_pipeline_dev_mt/unified/skeleton
 
-## Set up a working directory
-WORKDIR="/scratch/$USER/wes_pipe_test"
-if [ ! -d $WORKDIR ]; then mkdir -p "$WORKDIR"; fi
+## Define some parameters
+output_dir="/scratch/$USER/wes_pipe_test"
+test_data_fq="/data/tandonm/pl_test_data/human/fastq"
 
-## Copy over the skeleton
-cp -r exome_pipeline_dev_mt/tumor_normal/* $WORKDIR
+## See if the dry-run works
+./run.sh --sourcefq "$test_data_fq" \
+         --outdir "$output_dir" \
+         --dryrun 1
 
-## Try to run the config tests
-cd $WORKDIR/config_tests
-
-./make_rulegraphs.sh
+## Without the --dryrun argument, the job will be submitted
+./run.sh --sourcefq "$test_data_fq" --outdir "$output_dir"
 
 ```
 
+
+## Customizing run parameters
 ### `run.sh`
 This is meant to be a catch-all driver script to do common tasks for running the pipeline.
 
 ```
-usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM]
+usage: run.sh [-h] [--sourcefq SOURCEFQ] [--sourcebam SOURCEBAM] [--mode MODE]
               [--pairs PAIRS] [--callers CALLERS] [--targets TARGETS]
               [--ffpe FFPE] [--cnv CNV] [--outdir OUTDIR] [--dryrun DRYRUN]
               [--unlock UNLOCK] [--until UNTIL] [--local LOCAL]
               [--slurmdir SLURMDIR] [--rulegraph RULEGRAPH] [--report REPORT]
               [--config CONFIG]
 
-Run muh pipelinezz
+Tumor-only Pipeline
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -54,6 +53,7 @@ optional arguments:
                         [input_params] Path to directory containing paired BAM
                         files. If '--sourcefq' is also defined, the sample IDs
                         should match the FASTQ files.
+  --mode MODE           [input_params] One of 'tumor_only' or 'paired'
   --pairs PAIRS         [input_params] TSV file containing two columns with
                         tumor and normal sample IDs, one pair per line. The
                         header needs to be 'Tumor' for the tumor column and
@@ -85,29 +85,10 @@ optional arguments:
                         arguments.
 ```
 
-## Example Run
-The test data contains 10 million randomly sampled read pairs from three human cell lines.
 
-Starting from BAM files, the basic pipeline (germline and somatic SNP calling) for this test data runs in a little over 2 hours total. 
+### Notes/To-do
 
-[Tumor-Normal Snakemake Report](tumor_normal/skeleton/report.html)
-
-```
-
-## Run this in the skeleton directory (or a copy)
-test_data_fq="/data/tandonm/pl_test_data/human/fastq"
-test_data_bam="/data/tandonm/pl_test_data/human/bams"
-pairs_file="pairs.tsv"
-
-## See if the dry-run works
-./run.sh --dryrun 1 \
-         --pairs "$pairs_file" \
-         --sourcebam "$test_data_bam"
-
-## Without the --dryrun argument, the job will be submitted
-./run.sh --pairs "$pairs_file" \
-         --sourcebam "$test_data_bam"
-
-```
-
+- Currently this works best if you copy the skeleton for each run. Mostly because the snakemake log is written to the skeleton (I guess wherever `run.sh` is called from)
+- Need a bam to fastq rule; currently, running from bam will cause a couple of the QC rules that require fastqs to fail
+- Replace run.sh with a python program; ideally generate config.json on-the-fly 
 
