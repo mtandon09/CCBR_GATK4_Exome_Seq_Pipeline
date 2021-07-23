@@ -12,7 +12,7 @@ parser.add_argument('--callers',required=False, default='', help='[input_params]
 parser.add_argument('--targets',required=False, default='', help='[input_params] Path to exome targets BED file')
 parser.add_argument('--ffpe',required=False, default='', help='[input_params] Add FFPE filtering step (set to one of \'true\', \'t\', or \'yes\' (case-insensitive))')
 parser.add_argument('--cnv',required=False, default='', help='[input_params] Add CNV calling step (set to one of \'true\', \'t\', or \'yes\' (case-insensitive))')
-parser.add_argument('--outdir',required=False, default='', help='[input_params] Location to store pipeline output')
+parser.add_argument('--outdir',required=False, default='pipeline_output', help='[input_params] Location to store pipeline output')
 parser.add_argument('--dryrun',required=False, default='', help='Dry-run only (provide any non-empty string)')
 parser.add_argument('--unlock',required=False, default='', help='Unlock working directory (provide any non-empty string)')
 parser.add_argument('--until',required=False,  default='', help='Rule name to stop at; passed to snakemake\'s \'--until\' argument')

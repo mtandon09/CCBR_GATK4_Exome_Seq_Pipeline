@@ -163,8 +163,8 @@ def read_pairsfile(tn_mode="auto", pairs_filepath="", sample_names=[]):
         overlapped_pairs = {k: paired_ids[k] for k in sample_names if k in paired_ids}
         overlapped_tumors = list(set(tumor_ids) & set(sample_names))
         
-        print(str(len(overlapped_pairs)) + " of " + str(len(paired_ids)) + " pairs in pairs file matched given sample names")
-        print(str(len(overlapped_tumors)) + " of " + str(len(tumor_ids)) + " tumors in pairs file matched given sample names")
+        # print(str(len(overlapped_pairs)) + " of " + str(len(paired_ids)) + " pairs in pairs file matched given sample names")
+        # print(str(len(overlapped_tumors)) + " of " + str(len(tumor_ids)) + " tumors in pairs file matched given sample names")
         
         paired_ids=overlapped_pairs
         tumor_ids=overlapped_tumors
@@ -232,7 +232,7 @@ pairs_file = config['input_params']['PAIRS_FILE']
 
 # tn_mode="tumor_only"
 tn_mode=config['input_params']['TN_MODE']
-print(tn_mode)
+# print(tn_mode)
 # if 'TN_MODE' in config['input_params']:
 #     tn_mode=config['input_params']['TN_MODE']
 #     print(tn_mode)
