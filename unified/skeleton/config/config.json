@@ -111,7 +111,7 @@
             "version": "3.8-1"
         },
         "gatk4": {
-            "version": "4.1.4.1"
+            "version": "4.2.0.0"
         },
         "strelka": {
             "version": "2.9.0"
