@@ -1,5 +1,13 @@
 
 rule haplotypecaller:
+    """
+    Germline variant calling. This can be done independently across the
+    genome, so we're splitting it up by chromosome.
+    @Input:
+        Aligned reads in BAM format
+    @Output:
+        Single-sample gVCF
+    """
     input: 
         bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
         bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
@@ -18,6 +26,13 @@ rule haplotypecaller:
         """
 
 rule mergegvcfs:
+    """
+    Merge germline variants across samples
+    @Input:
+        Single-sample gVCFs, scattered across chromosomes
+    @Output:
+        Multi-sample gVCF, scattered across chromosomes
+    """
     input: gzvcf = expand(os.path.join(output_germline_base,"gVCFs","{samples}.{{chroms}}.g.vcf.gz"),samples=samples),
            index = expand(os.path.join(output_germline_base,"gVCFs","{samples}.{{chroms}}.g.vcf.gz.tbi"),samples=samples),
            # list = "gVCFs/gVCFs.{chroms}.list",
@@ -35,6 +50,13 @@ rule mergegvcfs:
         """
 
 rule genotype:
+    """
+    Joint genotyping of germline variants
+    @Input:
+        Multi-sample gVCF, scattered across chromosomes
+    @Output:
+        Multi-sample gVCF, scattered across chromosomes (with joint genotyping updates)
+    """
     input: 
         gzvcf = os.path.join(output_germline_base,"gVCFs","merged.{chroms}.g.vcf.gz"),
         index = os.path.join(output_germline_base,"gVCFs","merged.{chroms}.g.vcf.gz.tbi"),
@@ -52,6 +74,13 @@ rule genotype:
         """
 
 rule germline_merge_chrom:
+    """
+    Combine joint genotyping from all chromosomes
+    @Input:
+        Multi-sample gVCF for all chromosomes
+    @Output:
+        Multi-sample gVCF with all chromosomes combined
+    """
     input:
         expand(os.path.join(output_germline_base,"VCF","by_chrom","raw_variants.{chroms}.vcf.gz"), chroms=chroms),
     output:
@@ -67,6 +96,13 @@ rule germline_merge_chrom:
         """
 
 rule Gatk_SelectVariants:
+    """
+    Make individual VCFs with variant sites in that sample
+    @Input:
+        Multi-sample gVCF with all chromosomes combined
+    @Output:
+        Single-sample VCF with unfiltered germline variants
+    """
 	input: vcf=os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
 	output: vcf=os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz")
 	params: genome=config['references']['GENOME'], Sname = "{samples}", rname="varselect",ver_gatk=config['tools']['gatk4']['version'],targets=exome_targets_bed

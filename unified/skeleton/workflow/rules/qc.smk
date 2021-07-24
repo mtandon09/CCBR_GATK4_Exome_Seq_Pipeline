@@ -1,5 +1,12 @@
 
 rule somalier_extract:
+    """
+    To estimate ancestry, Somalier first extracts known sites from mapped reads
+    @Input:
+        Mapped and pre-processed BAM file
+    @Output:
+        Exracted sites in (binary) somalier format
+    """
     input:  bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
             bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
     output: somalierOut=os.path.join(output_germline_base,"somalier","{samples}.somalier")
@@ -33,6 +40,15 @@ rule somalier_extract:
             """
   
 rule somalier_relatedness:
+    """
+    To estimate relatedness, Somalier uses extracted site information to
+    compare across all samples.  This step also runs the ancestry estimation
+    function in Somalier.
+    @Input:
+        Exracted sites in (binary) somalier format for ALL samples in the cohort
+    @Output:
+        Separate tab-separated value (TSV) files with relatedness and ancestry outputs
+    """
     input:
         somalier=expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
     output:
@@ -65,6 +81,14 @@ rule somalier_relatedness:
             """
 
 rule somalier_analysis:
+    """
+    Some secondary analyses on Somalier relatedness and ancestry output,
+    including gender prediction and an interactive ancestry PCA plto.
+    @Input:
+        Tab-separated value (TSV) files with relatedness and ancestry outputs from Somalier
+    @Output:
+        Plots ancestry PCA (html), plots of predicted pairs (pdf), and TSVs with gender and pairing analysis
+    """
     input:  somalierPairs=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
             somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
             somalierAncestry=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),

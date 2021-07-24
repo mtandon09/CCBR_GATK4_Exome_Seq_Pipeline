@@ -1,5 +1,15 @@
 
 rule trimmomatic:
+    """
+    (Plagiarized from https://github.com/skchronicles/RNA-seek/blob/main/workflow/rules/paired-end.smk)
+    Data-processing step to remove adapter sequences and perform quality trimming
+    prior to alignment the reference genome.  Adapters are composed of synthetic
+    sequences and should be removed prior to alignment.
+    @Input:
+        Raw FastQ file (scatter)
+    @Output:
+        Trimmed FastQ file
+    """
     input:  r1=os.path.join(input_fqdir, "{samples}.R1.fastq.gz"),
             r2=os.path.join(input_fqdir, "{samples}.R2.fastq.gz")
     output: one=temp(os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz")),
@@ -19,6 +29,13 @@ rule trimmomatic:
             """
 
 rule bwa_mem:
+    """
+    Map trimmed paired reads to the reference genome using the 'bwa' aligner
+    @Input:
+        One pair of FASTQ files
+    @Output:
+        Aligned reads in BAM format
+    """
     input:  os.path.join(output_fqdir,"{samples}.R1.trimmed.fastq.gz"),
             os.path.join(output_fqdir,"{samples}.R2.trimmed.fastq.gz")
     output: temp(os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam"))
@@ -33,6 +50,17 @@ rule bwa_mem:
             """
 
 rule raw_index:
+      """
+      Make index of mapped BAM file.
+      
+      Honestly, it makes more sense to add this to the map step in most cases.
+      The reason to keep it separate is if you want to allow custom mapped files (before
+      recalibration) to be input into the pipeline. But we're not doing that here.
+      @Input:
+          One pair of FASTQ files
+      @Output:
+          Aligned reads in BAM format
+      """
       input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam")
       output: bai=temp(os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai")),
       params: ver_samtools=config['tools']['samtools']['version'],rname="raw_index"
@@ -40,31 +68,44 @@ rule raw_index:
               module load samtools/{params.ver_samtools}
               samtools index -@ 2 {input.bam} {output.bai}
               """
-rule realign:
-      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam"),
-              bai=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai"),
-      output: bam=temp(os.path.join(output_bamdir,"preprocessing","{samples}.realign.bam")),
-              int=temp(os.path.join(output_bamdir,"preprocessing","{samples}.intervals")),
-      params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNINDELS'],ver_gatk=config['tools']['gatk3']['version'],rname="realign"
-      shell:  """
-              module load GATK/{params.ver_gatk}
-              java -Xmx48g -jar $GATK_JAR -T RealignerTargetCreator -I {input.bam} -R {params.genome} -o {output.int} {params.knowns}
-              java -Xmx48g -jar $GATK_JAR -T IndelRealigner -R {params.genome} -I {input.bam} {params.knowns} --use_jdk_inflater --use_jdk_deflater -targetIntervals {output.int} -o {output.bam}
-              """
 
 rule gatk_recal:
-      input:  os.path.join(output_bamdir,"preprocessing","{samples}.realign.bam")
+      """
+      Base quality recalibration (BQSR), part of the GATK Best Practices.
+      
+      The idea is that each sequencer/run will have systematic biases.
+      BQSR learns about these biases using known sites of variation (common SNPs),
+      and uses it to adjust base quality on all sites, including novel sites of
+      variation.  Since base quality is taken into account during variant calling,
+      this will help pick up real variants in low depth or otherwise noisy loci.
+      @Input:
+          Aligned reads in BAM format
+      @Output:
+          Aligned reads in BAM format, with altered quality scores
+      """
+      input:  bam=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bam"),
+              bai=os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai"),
       output: bam=os.path.join(input_bamdir,"{samples}.input.bam"),
               re=temp(os.path.join(output_bamdir,"preprocessing","{samples}_recal_data.grp"))
-      params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tools']['gatk4']['version'],rname="recal"
+      params: genome=config['references']['GENOME'],knowns=config['references']['KNOWNRECAL'],ver_gatk=config['tools']['gatk4']['version'], chrom=chroms,intervals=intervals_file, rname="recal"
       threads: 24
       shell:  """
               module load GATK/{params.ver_gatk}
-              gatk --java-options '-Xmx48g' BaseRecalibrator --input {input} --reference {params.genome} {params.knowns} --output {output.re}
-              gatk --java-options '-Xmx48g' ApplyBQSR --reference {params.genome} --input {input} --bqsr-recal-file {output.re} --output {output.bam} --use-jdk-inflater --use-jdk-deflater
+              gatk --java-options '-Xmx48g' BaseRecalibrator --input {input.bam} --reference {params.genome} {params.knowns} --output {output.re} --intervals {params.intervals}
+              gatk --java-options '-Xmx48g' ApplyBQSR --reference {params.genome} --input {input.bam} --bqsr-recal-file {output.re} --output {output.bam} --use-jdk-inflater --use-jdk-deflater
               """
 
 rule bam_check:
+      """
+      This is a checkpoint to make sure BAMs are ready for variant calling.
+      
+      The read group (RG) tags are checked to make sure they match the sample ID
+      inferred from the file name, and the bam is indexed.
+      @Input:
+          Aligned reads in BAM format
+      @Output:
+          Aligned reads in BAM format, with appropriate RG tags and index file
+      """
       input:  bam=os.path.join(input_bamdir,"{samples}.input.bam")
       output: bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
               bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
