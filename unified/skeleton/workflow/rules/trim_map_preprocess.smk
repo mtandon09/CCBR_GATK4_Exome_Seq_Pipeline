@@ -1,4 +1,27 @@
 
+rule bam2fastq:
+    """
+    Convert BAM files to paired FASTQ.
+    
+    A few of the QC tools run directly on fastq files (kraken and
+    fastqscreen, maybe others?).  When starting the pipeline from BAMs,
+    this rule ensures that a fastq is also available.
+    @Input:
+        BAM file
+    @Output:
+        Paired FASTQ files
+    """
+    input: bam=os.path.join(input_bamdir,"{samples}.input.bam"),
+    output: r1=os.path.join(input_fqdir, "{samples}.R1.fastq.gz"),
+            r2=os.path.join(input_fqdir, "{samples}.R2.fastq.gz"),
+            orphans=temp(input_fqdir, "{samples}.orphans.fastq.gz"),
+    params: genome=config['references']['GENOME'],ver_gatk=config['tools']['gatk4']['version'],rname="bam2fastq"
+    shell: """
+           module load GATK/{params.ver_gatk}
+           mkdir -p fastqs
+           gatk SamToFastq --INPUT {input.bam} --FASTQ {output.r1} --SECOND_END_FASTQ {output.r2} --UNPAIRED_FASTQ {output.orphans} --TMP_DIR /lscratch/$SLURM_JOBID -R /data/GRIS_NCBR/resources/human_g1k_v37_decoy.fasta
+           """
+           
 rule trimmomatic:
     """
     (Plagiarized from https://github.com/skchronicles/RNA-seek/blob/main/workflow/rules/paired-end.smk)

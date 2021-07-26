@@ -15,13 +15,18 @@ rule haplotypecaller:
         gzvcf = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz")),
         index = temp(os.path.join(output_germline_base,"gVCFs","{samples}.{chroms}.g.vcf.gz.tbi")),
     params: 
-        sample = "{samples}",rname = "hapcaller",genome = config['references']['GENOME'],snpsites=config['references']['DBSNP'], chrom="{chroms}"
+        sample = "{samples}",
+        genome = config['references']['GENOME'],
+        snpsites=config['references']['DBSNP'],
+        chrom="{chroms}",
+        ver_gatk=config['tools']['gatk4']['version'],
+        rname = "hapcaller"
     shell:
         """
         myoutdir="$(dirname {output.gzvcf})"
         if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
          
-        module load GATK/4.1.4.1
+        module load GATK/{ver_gatk}
         gatk --java-options '-Xmx24g' HaplotypeCaller --reference {params.genome} --input {input.bam} --use-jdk-inflater --use-jdk-deflater --emit-ref-confidence GVCF --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.gzvcf} --intervals {params.chrom} --max-alternate-alleles 3
         """
 
@@ -40,12 +45,14 @@ rule mergegvcfs:
         gzvcf = os.path.join(output_germline_base,"gVCFs","merged.{chroms}.g.vcf.gz"),
         index = os.path.join(output_germline_base,"gVCFs","merged.{chroms}.g.vcf.gz.tbi"),
     params: 
-        rname = "mergegvcfs",genome = config['references']['GENOME']
+        genome = config['references']['GENOME'],
+        ver_gatk=config['tools']['gatk4']['version'],
+        rname = "mergegvcfs"
     shell:
         """
         input_str="--variant $(echo "{input.gzvcf}" | sed -e 's/ / --variant /g')"
         
-        module load GATK/4.1.4.1
+        module load GATK/{ver_gatk}
         gatk --java-options '-Xmx24g' CombineGVCFs --reference {params.genome} --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation $input_str --output {output.gzvcf} --intervals {wildcards.chroms} --use-jdk-inflater --use-jdk-deflater
         """
 
@@ -63,13 +70,17 @@ rule genotype:
     output:
         vcf = os.path.join(output_germline_base,"VCF","by_chrom","raw_variants.{chroms}.vcf.gz"),
     params:
-        rname = "genotype",genome = config['references']['GENOME'],snpsites=config['references']['DBSNP'],chr="{chroms}"
+        genome = config['references']['GENOME'],
+        snpsites=config['references']['DBSNP'],
+        chr="{chroms}",
+        ver_gatk=config['tools']['gatk4']['version'],
+        rname = "genotype"
     shell:
         """
         myoutdir="$(dirname {output.vcf})"
         if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
         
-        module load GATK/4.1.4.1
+        module load GATK/{ver_gatk}
         gatk --java-options '-Xmx96g' GenotypeGVCFs --reference {params.genome} --use-jdk-inflater --use-jdk-deflater --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.vcf} --variant {input.gzvcf} --intervals {params.chr}
         """
 
