@@ -26,7 +26,7 @@ rule haplotypecaller:
         myoutdir="$(dirname {output.gzvcf})"
         if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
          
-        module load GATK/{ver_gatk}
+        module load GATK/{params.ver_gatk}
         gatk --java-options '-Xmx24g' HaplotypeCaller --reference {params.genome} --input {input.bam} --use-jdk-inflater --use-jdk-deflater --emit-ref-confidence GVCF --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.gzvcf} --intervals {params.chrom} --max-alternate-alleles 3
         """
 
@@ -52,7 +52,7 @@ rule mergegvcfs:
         """
         input_str="--variant $(echo "{input.gzvcf}" | sed -e 's/ / --variant /g')"
         
-        module load GATK/{ver_gatk}
+        module load GATK/{params.ver_gatk}
         gatk --java-options '-Xmx24g' CombineGVCFs --reference {params.genome} --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation $input_str --output {output.gzvcf} --intervals {wildcards.chroms} --use-jdk-inflater --use-jdk-deflater
         """
 
@@ -80,7 +80,7 @@ rule genotype:
         myoutdir="$(dirname {output.vcf})"
         if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
         
-        module load GATK/{ver_gatk}
+        module load GATK/{params.ver_gatk}
         gatk --java-options '-Xmx96g' GenotypeGVCFs --reference {params.genome} --use-jdk-inflater --use-jdk-deflater --annotation-group StandardAnnotation --annotation-group AS_StandardAnnotation --dbsnp {params.snpsites} --output {output.vcf} --variant {input.gzvcf} --intervals {params.chr}
         """
 

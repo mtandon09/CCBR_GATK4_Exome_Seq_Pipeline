@@ -14,7 +14,7 @@ rule bam2fastq:
     input: bam=os.path.join(input_bamdir,"{samples}.input.bam"),
     output: r1=os.path.join(input_fqdir, "{samples}.R1.fastq.gz"),
             r2=os.path.join(input_fqdir, "{samples}.R2.fastq.gz"),
-            orphans=temp(input_fqdir, "{samples}.orphans.fastq.gz"),
+            orphans=temp(os.path.join(input_fqdir, "{samples}.orphans.fastq.gz")),
     params: genome=config['references']['GENOME'],ver_gatk=config['tools']['gatk4']['version'],rname="bam2fastq"
     shell: """
            module load GATK/{params.ver_gatk}
