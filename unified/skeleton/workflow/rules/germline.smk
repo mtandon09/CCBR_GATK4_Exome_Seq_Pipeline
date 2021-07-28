@@ -97,6 +97,7 @@ rule germline_merge_chrom:
     output:
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
         list = os.path.join(output_germline_base,"VCF","by_chrom","raw_variants_byChrom.list"),
+    group: "germline_merge_chrom"
     params:
         rname = "merge_chrom", genome = config['references']['GENOME']
     shell:

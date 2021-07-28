@@ -10,6 +10,7 @@ rule somalier_extract:
     input:  bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
             bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
     output: somalierOut=os.path.join(output_germline_base,"somalier","{samples}.somalier")
+    group: "somalier"
     params: ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],somalier_container=config['references']['SOMALIER']['CONTAINER'],
             sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_extract"
     # threads: 32
@@ -55,6 +56,7 @@ rule somalier_relatedness:
         relatedness=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
         relatednessSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
         ancestry=os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
+    group: "somalier"
     params: ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],container=config['references']['SOMALIER']['CONTAINER'],
             sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_relatedness"
     shell:  """
@@ -96,6 +98,7 @@ rule somalier_analysis:
             finalFilePairs=os.path.join(output_germline_base,"predicted.pairs.tsv"),
             ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+    group: "somalier"
     params: ver_R=config['tools']['R']['version'],
             script_path_gender=config['scripts']['genderPrediction'],
             script_path_samples=config['scripts']['combineSamples'],
@@ -325,6 +328,7 @@ rule vcftools:
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
     output: 
         het = os.path.join(output_qcdir,"raw_variants.het"),
+    group: "vcftools"
     params: 
         prefix = os.path.join(output_qcdir,"raw_variants"),
         rname  = "vcftools",
@@ -350,6 +354,7 @@ rule collectvariantcallmetrics:
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
     output: 
         metrics = os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
+    group: "collectvariantcallmetrics"
     params: 
         dbsnp=config['references']['DBSNP'],
         prefix = os.path.join(output_qcdir,"raw_variants"),
@@ -382,6 +387,7 @@ rule bcftools_stats:
         vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"),
     output: 
         txt = os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"),
+    group: "bcftools_stats"
     params: 
         rname="bcfstats",
     shell: """

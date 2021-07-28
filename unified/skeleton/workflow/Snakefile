@@ -365,6 +365,7 @@ rule all:
 include: "rules/trim_map_preprocess.smk"
 include: "rules/germline.smk"
 include: "rules/qc.smk"
+include: "rules/somatic_snps.common.smk"
 
 if 'CNV_CALLING' in config['input_params']:
     if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
