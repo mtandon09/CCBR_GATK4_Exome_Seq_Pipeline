@@ -1,8 +1,6 @@
-# CCBR Exome-Seq Pipeline
-------
+# CCBR Exome-Seq Pipeline for Biowulf
 
 # Usage
-------
 
 ### Clone the repo
 ```
