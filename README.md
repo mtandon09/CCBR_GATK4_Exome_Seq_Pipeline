@@ -29,8 +29,13 @@ cd pipeline
 
 ## Can run this to see all options for the run command
 ./run.sh --help
+```
 
+### Define inputs and outputs
 
+If a targets bed file is not defined using `--targets`, the default will be used (from the Agilent SureSelect All Exon v7 kit)
+
+```
 ## Set up variables for input params for a run
 # Folder of fastq.gz files
 fq_dir="/data/tandonm/pl_test_data/human/fastq"
@@ -44,11 +49,18 @@ bed_file="/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed"
 
 # Pairs file; must contain column header "Tumor" and "Normal" (in any order) listing sample IDs
 pairs_file="/data/tandonm/pl_test_data/human/pairs"
+```
 
-
+### Dry run
+```
 ## Try a dry run to see if it all rules are compiled successfully
 ./run.sh --sourcefq "$fq_dir" --outdir "$output_dir" --targets "$bed_file" --pairs "$pairs_file" --ffpe "True" --dryrun 1
+```
 
+### Submit if everything works ok!
+
+This example runs paired tumor-normal calling. Omitting the `--pairs` arugment will run all paired fastqs in tumor-only mode.
+```
 ## Submit to the cluster by excluding the --dryrun flag
 ./run.sh --sourcefq "$fq_dir" --outdir "$output_dir" --targets "$bed_file" --pairs "$pairs_file" --ffpe "True"
 
