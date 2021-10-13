@@ -54,6 +54,19 @@ pairs_file="/data/tandonm/pl_test_data/human/pairs"
 
 ```
 
+# To do
 
+### Features/bug-fixes
++ Fix filter step for non-GATK callers
+  - Remove `SelectVariants` for callers using PON
+  - Prob replace ambiguous bases further upstream (BEFORE any GATK tools called)
++ Somatic variant filtering and report
+
+### Deployment
++ Implement better driver script to replace `run.sh`
++ Move resources in `/data/tandonm` to `/data/CCBR_Pipeliner`
+  - The vcf2maf resources bundle is already there, but needs to be updated to VEP 102 or something (`/data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources`)
++ Make containers
++ Containerize rules
 
 
