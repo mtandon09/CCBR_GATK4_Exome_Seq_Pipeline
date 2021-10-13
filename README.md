@@ -1,10 +1,21 @@
+# CCBR Exome-Seq Pipeline
+------
 
+# Usage
+------
 
+### Clone the repo
+```
+git clone https://github.com/mtandon09/exome_pipeline_dev_mt.git
+```
+
+### Set up a new run
+```
 ## The folder with the pipeline skeleton
-PIPE_DIR="/data/tandonm/new_exome_pipeline/pipeline"
+PIPE_DIR="$(pwd)/exome_pipeline_dev_mt/pipeline"
 
 ## New folder where we want to run it
-NEW_FOLDER="/data/$USER/exome_analysis"
+NEW_FOLDER="/data/$USER/exome_test"
 
 ## Create the new folder
 if [ ! -d $NEW_FOLDER ]; then mkdir -p $NEW_FOLDER; fi
@@ -42,6 +53,8 @@ pairs_file="/data/tandonm/pl_test_data/human/pairs"
 
 ## Submit to the cluster by excluding the --dryrun flag
 ./run.sh --sourcefq "$fq_dir" --outdir "$output_dir" --targets "$bed_file" --pairs "$pairs_file" --ffpe "True"
+
+```
 
 
 
