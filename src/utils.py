@@ -5,6 +5,7 @@
 from __future__ import print_function
 from shutil import copytree
 import os, sys, hashlib
+import subprocess, json
 
 
 def md5sum(filename, first_block_only = False, blocksize = 65536):
@@ -109,33 +110,6 @@ def ln(files, outdir):
                 os.symlink(os.path.abspath(os.path.realpath(file)), ln)
 
 
-def initialize(output_path, links=[]):
-    """Initialize the output directory. If user provides a output
-    directory path that already exists on the filesystem as a file 
-    (small chance of happening but possible), a OSError is raised. If the
-    output directory PATH already EXISTS, it will not try to create the directory.
-    @param output_path <str>:
-        Pipeline output path, created if it does not exist
-    @param links list[<str>]:
-        List of files to symlink into output_path
-    """
-    if not exists(output_path):
-        # Pipeline output directory does not exist on filesystem
-        os.makedirs(output_path)
-
-    elif exists(output_path) and os.path.isfile(output_path):
-        # Provided Path for pipeline output directory exists as file
-        raise OSError("""\n\tFatal: Failed to create provided pipeline output directory!
-        User provided --output PATH already exists on the filesystem as a file.
-        Please run {} again with a different --output PATH.
-        """.format(sys.argv[0])
-        )
-
-    # Create symlinks for each file in the output directory
-    ln(links, output_path)
-
-
-
 def which(cmd, path=None):
     """Checks if an executable is in $PATH
     @param cmd <str>:
@@ -223,6 +197,40 @@ def safe_copy(source, target, resources = []):
         if not exists(destination):
             # Required resources do not exist
             copytree(os.path.join(source, resource), destination)
+
+
+def git_commit_hash(repo_path):
+    """Gets the git commit hash of the RNA-seek repo.
+    @param repo_path <str>:
+        Path to RNA-seek git repo
+    @return githash <str>:
+        Latest git commit hash
+    """
+    githash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd = repo_path).strip()
+    # Typecast to fix python3 TypeError (Object of type bytes is not JSON serializable)
+    # subprocess.check_output() returns a byte string
+    githash = str(githash)
+
+    return githash
+
+
+def join_jsons(templates):
+    """Joins multiple JSON files to into one data structure
+    Used to join multiple template JSON files to create a global config dictionary.
+    @params templates <list[str]>:
+        List of template JSON files to join together
+    @return aggregated <dict>:
+        Dictionary containing the contents of all the input JSON files
+    """
+    # Get absolute PATH to templates in rna-seek git repo
+    repo_path = os.path.dirname(os.path.abspath(__file__))
+    aggregated = {}
+
+    for file in templates:
+        with open(os.path.join(repo_path, file), 'r') as fh:
+            aggregated.update(json.load(fh))
+
+    return aggregated
 
 
 if __name__ == '__main__':

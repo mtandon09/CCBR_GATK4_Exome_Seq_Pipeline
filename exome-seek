@@ -40,18 +40,20 @@ import sys, os, subprocess, re, json, textwrap
 # 3rd party imports from pypi
 import argparse  # potential python3 3rd party package, added in python/3.5
 
-# Local imports  
+# Local imports
+from src import version
+from src.run import init, setup, dryrun
 from src.shells import bash
 from src.options import genome_options
-from src.utils import (initialize,
-     err,
+from src.utils import (err,
      exists,
      fatal,
      permissions,
      require)
 
-__version__ = 'v1.0.0-beta'
+__version__ = version
 __email__ = 'kuhnsa@nih.gov'
+__home__  =  os.path.dirname(os.path.abspath(__file__))
 
 
 def run(sub_args):
@@ -62,10 +64,51 @@ def run(sub_args):
     @param sub_args <parser.parse_args() object>:
         Parsed arguments for run sub-command
     """
-    # Get PATH to exome-seek git repository for copying over pipeline resources
-    git_repo = os.path.dirname(os.path.abspath(__file__))
-    print(sub_args)
-    fatal('NotImplementedError... Comming Soon!')
+    # Step 1. Initialize working directory,
+    # copy over required resources to run 
+    # the pipeline
+    git_repo = __home__
+    input_files = init(
+        repo_path = git_repo,
+        output_path = sub_args.output,
+        links = sub_args.input
+    )
+
+    # Step 2. Setup pipeline for execution, 
+    # dynamically create config.json config
+    # file from user inputs and base config
+    # templates
+    config = setup(sub_args, 
+        ifiles = input_files,
+        repo_path = git_repo,
+        output_path = sub_args.output
+    )
+
+    # Optional Step: Dry-run pipeline
+    if sub_args.dry_run:
+            # Dryrun pipeline
+        dryrun_output = dryrun(outdir = sub_args.output) # python3 returns byte-string representation
+        print("\nDry-running RNA-seek pipeline:\n{}".format(dryrun_output.decode("utf-8")))
+        
+        # # Resolve all Singularity Bindpaths
+        # rawdata_bind_paths = config['project']['datapath']
+        # # Get FastQ Screen Database paths
+        # # and other reference genome file paths
+        # fqscreen_cfg1=config['bin']['rnaseq']['tool_parameters']['FASTQ_SCREEN_CONFIG']
+        # fqscreen_cfg2=config['bin']['rnaseq']['tool_parameters']['FASTQ_SCREEN_CONFIG2']
+        # fq_screen_paths = get_fastq_screen_paths([os.path.join(sub_args.output,fqscreen_cfg1), os.path.join(sub_args.output,fqscreen_cfg2)])
+        # kraken_db_path = [config['bin']['rnaseq']['tool_parameters']['KRAKENBACDB']]
+        # genome_bind_paths = resolve_additional_bind_paths(list(config['references']['rnaseq'].values()) + fq_screen_paths + kraken_db_path)
+        # all_bind_paths = "{},{}".format(",".join(genome_bind_paths), rawdata_bind_paths)
+# 
+        # masterjob = orchestrate(mode = sub_args.mode, outdir = sub_args.output, additional_bind_paths = all_bind_paths, alt_cache = sub_args.singularity_cache,  threads = sub_args.threads)
+# 
+        # print("\nRunning RNA-seek pipeline in '{}' mode...".format(sub_args.mode))
+        # masterjob.wait()
+        # if sub_args.mode == 'local':
+        #     print('RNA-seek pipeline has completed with exit-code: {}'.format(masterjob.returncode))
+        # elif sub_args.mode == 'slurm':
+        #     print('RNA-seek pipeline submitted master job with exit-code: {}'.format(masterjob.returncode))
 
 
 
