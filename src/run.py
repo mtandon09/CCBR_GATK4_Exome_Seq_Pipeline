@@ -4,12 +4,13 @@
 # Python standard library
 from __future__ import print_function
 from shutil import copytree
-import os, re, json, sys
+import os, re, json, sys, subprocess
 
 # Local imports
 from utils import (git_commit_hash,
     join_jsons,
     fatal,
+    which,
     exists,
     err)
 
@@ -85,7 +86,6 @@ def sym_safe(input_data, target):
         List of renamed input FastQs
     """
     input_fastqs = [] # store renamed fastq file names
-    os.makedirs(target, 'input')
     for file in input_data:
         filename = os.path.basename(file)
         renamed = os.path.join(target, rename(filename))
@@ -228,11 +228,10 @@ def setup(sub_args, ifiles, repo_path, output_path):
     config['project']['pairs'] = str(sub_args.pairs)
 
     # Save config to output directory
-    print("\nGenerating config file in '{}'... ".format(os.path.join(output_path, 'config.json')), end = "")
-    # print(json.dumps(config, indent = 4, sort_keys=True))
+    # print("\nGenerating config file in '{}'... ".format(os.path.join(output_path, 'config.json')), end = "")
     with open(os.path.join(output_path, 'config.json'), 'w') as fh:
         json.dump(config, fh, indent = 4, sort_keys = True)
-    print("Done!")
+    # print("Done!")
 
     return config
 
@@ -442,39 +441,131 @@ def get_rawdata_bind_paths(input_files):
     return bindpaths
 
 
-def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Snakefile')):
+def dryrun(outdir, config='config.json', cluster_config=os.path.join('config', 'cluster.json'), snakefile=os.path.join('workflow', 'Snakefile')):
     """Dryruns the pipeline to ensure there are no errors prior to runnning.
     @param outdir <str>:
         Pipeline output PATH
     @return dryrun_output <str>:
         Byte string representation of dryrun command
     """
-    import subprocess
-
     try:
         dryrun_output = subprocess.check_output([
             'snakemake', '-npr',
             '-s', str(snakefile),
             '--use-singularity',
-            '--cores', '1',
             '--configfile={}'.format(config)
         ], cwd = outdir,
         stderr=subprocess.STDOUT)
-
-    except subprocess.CalledProcessError as e:
-        # Singularity is NOT in $PATH
-        # Tell user to load both main dependencies to avoid the OSError below
-        print('Are singularity and snakemake in your PATH? Please check before proceeding again!')
-        sys.exit("{}\n{}".format(e, e.output))
     except OSError as e:
         # Catch: OSError: [Errno 2] No such file or directory
         #  Occurs when command returns a non-zero exit-code
-        if e.errno == 2 and not exe_in_path('snakemake'):
+        if e.errno == 2 and not which('snakemake'):
             # Failure caused because snakemake is NOT in $PATH
-            print('\x1b[6;37;41m\nError: Are snakemake AND singularity in your $PATH?\nPlease check before proceeding again!\x1b[0m', file=sys.stderr)
-            sys.exit("{}\n{}".format(e, e.output))
+            err('\n\x1b[6;37;41mError: Are snakemake AND singularity in your $PATH?\x1b[0m')
+            fatal('\x1b[6;37;41mPlease check before proceeding again!\x1b[0m')
         else:
             # Failure caused by unknown cause, raise error
             raise e
 
     return dryrun_output
+
+
+def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None, 
+    threads=2,  jobname='pl:exome-seek', submission_script='runner'):
+    """Runs the pipeline via selected executor: local or slurm.
+    If 'local' is selected, the pipeline is executed locally on a compute node/instance.
+    If 'slurm' is selected, jobs will be submited to the cluster using SLURM job scheduler.
+    Support for additional job schedulers (i.e. PBS, SGE, LSF) may be added in the future.
+    @param outdir <str>:
+        Pipeline output PATH
+    @param mode <str>:
+        Execution method or mode:
+            local runs serially a compute instance without submitting to the cluster.
+            slurm will submit jobs to the cluster using the SLURM job scheduler.
+    @param additional_bind_paths <str>:
+        Additional paths to bind to container filesystem (i.e. input file paths)
+    @param alt_cache <str>:
+        Alternative singularity cache location
+    @param logger <file-handle>:
+        An open file handle for writing
+    @param threads <str>:
+        Number of threads to use for local execution method
+    @param masterjob <str>:
+        Name of the master job
+    @return masterjob <subprocess.Popen() object>:
+    """
+    # Add additional singularity bind PATHs
+    # to mount the local filesystem to the 
+    # containers filesystem, NOTE: these 
+    # PATHs must be an absolute PATHs
+    outdir = os.path.abspath(outdir)
+    # Add any default PATHs to bind to 
+    # the container's filesystem
+    bindpaths = "{},/lscratch".format(outdir)
+    # Set ENV variable 'SINGULARITY_CACHEDIR' 
+    # to output directory
+    my_env = {}; my_env.update(os.environ)
+    cache = os.path.join(outdir, ".singularity")
+    my_env['SINGULARITY_CACHEDIR'] = cache
+    if alt_cache:
+        # Override the pipeline's default 
+        # cache location
+        my_env['SINGULARITY_CACHEDIR'] = alt_cache
+        cache = alt_cache
+
+    if additional_bind_paths:
+        # Add Bind PATHs for rawdata directories
+        bindpaths = "{},{}".format(additional_bind_paths,bindpaths)
+
+    if not exists(os.path.join(outdir, 'logfiles')):
+        # Create directory for logfiles
+        os.makedirs(os.path.join(outdir, 'logfiles'))
+    
+    # Create .singularity directory for 
+    # installations of snakemake without
+    # setuid which creates a sandbox in
+    # the SINGULARITY_CACHEDIR
+    if not exists(cache):
+        # Create directory for sandbox 
+        # and image layers
+        os.makedirs(cache)
+
+    # Run on compute node or instance
+    # without submitting jobs to a scheduler
+    if mode == 'local':
+        # Run pipeline's main process
+        # Look into later: it maybe worth 
+        # replacing Popen subprocess with a direct
+        # snakemake API call: https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
+        masterjob = subprocess.Popen([
+                'snakemake', '-pr',
+                '--use-singularity',
+                '--singularity-args', "'-B {}'".format(bindpaths),
+                '--cores', str(threads),
+                '--configfile=config.json'
+            ], cwd = outdir, stderr=subprocess.STDOUT, stdout=logger, env=my_env)
+
+    # Submitting jobs to cluster via SLURM's job scheduler
+    elif mode == 'slurm':
+        # Run pipeline's main process
+        # Look into later: it maybe worth 
+        # replacing Popen subprocess with a direct
+        # snakemake API call: https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
+        # CLUSTER_OPTS="'sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} \
+        #   -t {cluster.time} --mem {cluster.mem} --job-name={params.rname} -e $SLURMDIR/slurm-%j_{params.rname}.out \
+        #   -o $SLURMDIR/slurm-%j_{params.rname}.out'"
+        # sbatch --parsable -J "$2" --gres=lscratch:500 --time=5-00:00:00 --mail-type=BEGIN,END,FAIL \
+        #   --cpus-per-task=32 --mem=96g --output "$3"/logfiles/snakemake.log --error "$3"/logfiles/snakemake.log \
+        # snakemake --latency-wait 120 -s "$3"/workflow/Snakefile -d "$3" \
+        #   --use-singularity --singularity-args "'-B $4'" --configfile="$3"/config.json \
+        #   --printshellcmds --cluster-config "$3"/resources/cluster.json \
+        #   --cluster "${CLUSTER_OPTS}" --keep-going --restart-times 3 -j 500 \
+        #   --rerun-incomplete --stats "$3"/logfiles/runtime_statistics.json \
+        #   --keep-remote --local-cores 30 2>&1 | tee -a "$3"/logfiles/master.log
+        masterjob = subprocess.Popen([
+                str(os.path.join(outdir, 'resources', str(submission_script))), mode,
+                '-j', jobname, '-b', str(bindpaths),
+                '-o', str(outdir), '-c', str(cache),
+            ], cwd = outdir, stderr=subprocess.STDOUT, stdout=logger, env=my_env)
+
+    return masterjob

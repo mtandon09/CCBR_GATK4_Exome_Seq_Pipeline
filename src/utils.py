@@ -171,11 +171,11 @@ def require(cmds, suggestions, path=None):
         available = which(cmds[i])
         if not available:
             error = True
-            err("""\n\tFatal: {} is not in $PATH and is required during runtime!
-            └── Solution: please 'module load {}' and run again!""".format(cmds[i], suggestions[i])
+            err("""\x1b[6;37;41m\n\tFatal: {} is not in $PATH and is required during runtime!
+            └── Solution: please 'module load {}' and run again!\x1b[0m""".format(cmds[i], suggestions[i])
             )
 
-    if error: sys.exit(1)
+    if error: fatal()
 
     return 
 
