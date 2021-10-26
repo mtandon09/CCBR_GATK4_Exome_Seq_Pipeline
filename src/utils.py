@@ -48,14 +48,14 @@ def permissions(parser, path, *args, **kwargs):
     @param path <str>:
         Name of path to check
     @return path <str>:
-        If path exists and user can read from location
+        Returns abs path if it exists and permissions are correct
     """
     if not exists(path):
         parser.error("Path '{}' does not exists! Failed to provide vaild input.".format(path))
     if not os.access(path, *args, **kwargs):
         parser.error("Path '{}' exists, but cannot read path due to permissions!".format(path))
 
-    return path
+    return os.path.abspath(path)
 
 
 def standard_input(parser, path, *args, **kwargs):
