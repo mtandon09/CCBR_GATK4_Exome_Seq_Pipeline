@@ -215,9 +215,9 @@ def setup(sub_args, ifiles, repo_path, output_path):
     # Add optional cli workflow steps
     config['input_params']['CNV_CALLING'] = str(sub_args.cnv).lower()
     config['input_params']['FFPE_FILTER'] = str(sub_args.ffpe).lower()
-    config['input_params']['EXOME_TARGETS'] = str(sub_args.targets)
+    config['input_params']['EXOME_TARGETS'] = str(os.path.abspath(sub_args.targets))
     config['input_params']['VARIANT_CALLERS'] = sub_args.callers
-    config['input_params']['PAIRS_FILE'] = str(sub_args.pairs)
+    config['input_params']['PAIRS_FILE'] = str(os.path.abspath(sub_args.pairs))
     config['input_params']['BASE_OUTDIR'] = str(sub_args.output)
 
 
