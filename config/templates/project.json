@@ -1,0 +1,16 @@
+{
+	"project": {
+		"filetype": "",
+		"id": "CCBR_GATK4_WES_Pipeline",
+		"nends": -1,
+		"pairs": {},
+		"pfamily": "dnaseq",
+		"pipehome": "",
+		"userhome": "",
+		"pipeline": "Exome-seek",
+		"samples": {},
+		"username": "",
+		"version": "",
+		"workpath": ""
+	}
+}

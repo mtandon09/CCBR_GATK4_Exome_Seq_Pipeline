@@ -267,13 +267,17 @@ if not os.path.isfile(intervals_file):
         f.write("\n".join(chroms))
         f.close
 
-# caller_dict=config['output_params']['SOMATIC_VCF']
+
+# Check if user provided at least
+# one useable variant caller
 caller_list=[caller_name.lower() for caller_name in config['input_params']['VARIANT_CALLERS']]
 caller_list=list(set(caller_list) & set(config['available_somatic_callers'][tn_mode]))
 
 if not caller_list:
-    raise NameError("""\n\tFatal: Must define one or more variant caller!
-        """.format(fq_source, input_bamdir, sys.argv[0])
+    # Did not provide a variant
+    # caller that can be used
+    raise TypeError("""\n\tFatal: Must define one or more {} variant caller!\n{}
+    """.format(tn_mode, config['available_somatic_callers'][tn_mode])
     )
 
 merge_outdir=config['output_params']['MERGED_SOMATIC_OUTDIR']

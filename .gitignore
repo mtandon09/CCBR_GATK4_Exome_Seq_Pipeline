@@ -139,3 +139,23 @@ dmypy.json
 **/.snakemake*
 .venv
 .venv/*
+
+# Pipeline Results or Output
+results/
+output/
+tmp/
+scratch/
+
+# mkdocs documentation
+site/
+
+# Pipeline generated files or directories
+.tests/*/
+.snakemake/
+
+# Cached Java directories
+.oracle_jre_usage/
+.java/
+
+# GNU Parallel
+.parallel/
