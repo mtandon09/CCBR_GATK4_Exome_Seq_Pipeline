@@ -133,15 +133,14 @@ rule sobdetect_metrics:
     """
 
 rule ffpefilter_mafs:
-  input: filtered_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz"),
-         vcf2maf_script=VCF2MAF_WRAPPER
+  input: filtered_vcf=os.path.join(SOBDetector_out,"{vc_outdir}","pass2","{samples}.artifact_filtered.vcf.gz")
   output: maf=os.path.join(output_somatic_base,SOBDetector_out,"{vc_outdir}","maf","{samples}.maf")
-  params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf"
+  params: tumorsample="{samples}",genome=config['references']['MAF_GENOME'],filtervcf=config['references']['MAF_FILTERVCF'],rname="pl:vcf2maf",vcf2maf_script=VCF2MAF_WRAPPER
   shell:
     """
     date
     echo "Converting to MAF..."
-    bash {input.vcf2maf_script} --vcf {input.filtered_vcf} --maf {output.maf} --tid {params.tumorsample} --genome {params.genome} --threads "$((SLURM_CPUS_PER_TASK-1))" --info "set"
+    bash {params.vcf2maf_script} --vcf {input.filtered_vcf} --maf {output.maf} --tid {params.tumorsample} --genome {params.genome} --threads "$((SLURM_CPUS_PER_TASK-1))" --info "set"
     echo "Done converting to MAF..."
     date
     """

@@ -441,7 +441,7 @@ def get_rawdata_bind_paths(input_files):
     return bindpaths
 
 
-def dryrun(outdir, config='config.json', cluster_config=os.path.join('config', 'cluster.json'), snakefile=os.path.join('workflow', 'Snakefile')):
+def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Snakefile')):
     """Dryruns the pipeline to ensure there are no errors prior to runnning.
     @param outdir <str>:
         Pipeline output PATH
@@ -453,6 +453,7 @@ def dryrun(outdir, config='config.json', cluster_config=os.path.join('config', '
             'snakemake', '-npr',
             '-s', str(snakefile),
             '--use-singularity',
+            '--cores', str(1),
             '--configfile={}'.format(config)
         ], cwd = outdir,
         stderr=subprocess.STDOUT)
@@ -466,6 +467,9 @@ def dryrun(outdir, config='config.json', cluster_config=os.path.join('config', '
         else:
             # Failure caused by unknown cause, raise error
             raise e
+    except subprocess.CalledProcessError as e:
+        print(e, e.output)
+        raise(e)
 
     return dryrun_output
 
