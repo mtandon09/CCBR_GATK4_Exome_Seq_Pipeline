@@ -154,7 +154,7 @@ rule fc_lane:
         txt = os.path.join(output_fqdir,"{samples}.fastq.info.txt")
     params:
         rname = 'pl:fc_lane',
-        get_flowcell_lanes = os.path.join("scripts", "get_flowcell_lanes.py"),
+        get_flowcell_lanes = os.path.join("workflow", "scripts", "get_flowcell_lanes.py"),
     shell: """
     module load python/2.7
     python {params.get_flowcell_lanes} \\

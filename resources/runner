@@ -201,7 +201,8 @@ function submit(){
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --output "$3/logfiles/snakemake.log"
 #SBATCH --error "$3/logfiles/snakemake.log"
-#SBATCH --mail-type=BEGIN,END,FAIL
+
+set -euo pipefail
 
 snakemake --latency-wait 120 -s "$3/workflow/Snakefile" -d "$3" \\
   --use-singularity --singularity-args "'-B $4'" --configfile="$3/config.json" \\
