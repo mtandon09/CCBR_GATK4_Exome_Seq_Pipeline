@@ -152,7 +152,8 @@ rule collect_ffpefilter_mafs:
   shell:"""    
     date
     echo "Combining MAFs..."
-    awk 'FNR==1 && NR!=1 {{ while (/^#/||/^Hugo_Symbol/) getline; }} 1 {{print}}' {input.mafs} > {output.maf}
+    head -2 {input.mafs[0]} > {output.maf}
+    awk 'FNR>2 {{print}}' {input.mafs} >> {output.maf}
     echo "Done..."
     date
   """
