@@ -18,7 +18,7 @@ rule fc_lane:
     output:
         txt = os.path.join(output_fqdir,"{samples}.fastq.info.txt")
     params:
-        rname = 'pl:fc_lane',
+        rname = 'fc_lane',
         get_flowcell_lanes = os.path.join("workflow", "scripts", "get_flowcell_lanes.py"),
     envmodules: 'python/2.7'
     container: config['images']['python']
@@ -49,14 +49,15 @@ rule fastq_screen:
         png1 = os.path.join(output_qcdir,"FQscreen","{samples}.R1.trimmed_screen.png"),
         png2 = os.path.join(output_qcdir,"FQscreen","{samples}.R2.trimmed_screen.png")
     params:
-        rname  = "pl:fqscreen",
+        rname  = "fqscreen",
         outdir = os.path.join(output_qcdir,"FQscreen"),
         # Exposed Parameters: modify resources/fastq_screen.conf to change 
         # default locations to bowtie2 indices
         fastq_screen_config = config['references']['FASTQ_SCREEN_CONFIG'],
+    envmodules: 'fastq_screen/0.14.1'
+    container: config['images']['fastq_screen']
     threads: 24
     shell: """
-    module load fastq_screen/0.14.1
     fastq_screen --conf {params.fastq_screen_config} \\
         --outdir {params.outdir} \\
         --threads {threads} \\
@@ -86,7 +87,7 @@ rule kraken:
         taxa = os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.taxa.txt"),
         html = os.path.join(output_qcdir,"kraken","{samples}.trimmed.kraken_bacteria.krona.html"),
     params:
-        rname  ='pl:kraken',
+        rname  ='kraken',
         outdir = os.path.join(output_qcdir, "kraken"),
         bacdb  = config['references']['KRAKENBACDB'],
         localdisk = config['input_params']['tmpdisk']
@@ -479,6 +480,7 @@ rule somalier_analysis:
     Rscript {params.script_path_samples} {output.relatedness} {output.finalFilePairs}
     Rscript {params.script_path_pca} {output.ancestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
     """
+
 
 rule multiqc:
     """
