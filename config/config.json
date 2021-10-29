@@ -10,7 +10,8 @@
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
       "GERMLINE": "false",
       "FFPE_FILTER": "false",
-      "CNV_CALLING": "false"
+      "CNV_CALLING": "false",
+      "tmpdisk": "/lscratch/$SLURM_JOBID/"
     },
     "input_params_test": {
       "FASTQ_SOURCE": "/data/tandonm/pl_test_data/human/fastq",

@@ -42,7 +42,7 @@ import argparse  # potential python3 3rd party package, added in python/3.5
 
 # Local imports
 from src import version
-from src.run import init, setup, dryrun, runner
+from src.run import init, setup, bind, dryrun, runner
 from src.shells import bash
 from src.options import genome_options
 from src.utils import (err,
@@ -89,17 +89,21 @@ def run(sub_args):
         output_path = sub_args.output
     )
 
+    # Step 3. Resolve docker/singularity bind
+    # paths from the config file.
+    bindpaths = bind(
+        sub_args,
+        config = config
+    )
+
     # Optional Step: Dry-run pipeline
     if sub_args.dry_run:
         # Dryrun pipeline
         dryrun_output = dryrun(outdir = sub_args.output) # python3 returns byte-string representation
         print("\nDry-running RNA-seek pipeline:\n{}".format(dryrun_output.decode("utf-8")))
         sys.exit(0)
-        
-    # TODO: Resolve all Singularity bindpaths
-    # add autoresolving function here
 
-    # Step 3. Orchestrate pipeline execution,
+    # Step 4. Orchestrate pipeline execution,
     # run pipeline in locally on a compute node
     # for debugging purposes or submit the master
     # job to the job scheduler, SLURM, and create 
@@ -119,17 +123,18 @@ def run(sub_args):
         threads = int(sub_args.threads),
         jobname = sub_args.job_name,
         submission_script='runner',
-        logger = logfh
+        logger = logfh,
+        additional_bind_paths = ",".join(bindpaths)
     )
     
-    # Step 4. Wait for subprocess to complete,
+    # Step 5. Wait for subprocess to complete,
     # this is blocking and not asynchronous
     if not sub_args.silent:
         print("\nRunning GATK4 WES pipeline in '{}' mode...".format(sub_args.mode)) 
     mjob.wait()
     logfh.close()
 
-    # Step 5. Relay information about submission
+    # Step 6. Relay information about submission
     # of the master job or the exit code of the 
     # pipeline that ran in local mode
     if sub_args.mode == 'local':

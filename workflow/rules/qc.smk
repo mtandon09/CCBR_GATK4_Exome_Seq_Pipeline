@@ -1,138 +1,3 @@
-
-rule somalier_extract:
-    """
-    To estimate ancestry, Somalier first extracts known sites from mapped reads
-    @Input:
-        Mapped and pre-processed BAM file
-    @Output:
-        Exracted sites in (binary) somalier format
-    """
-    input:  bam=os.path.join(output_bamdir,"final_bams","{samples}.bam"),
-            bai=os.path.join(output_bamdir,"final_bams","{samples}.bai"),
-    output: somalierOut=os.path.join(output_germline_base,"somalier","{samples}.somalier")
-    # group: "quick_qc_steps"
-    params: ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],somalier_container=config['references']['SOMALIER']['CONTAINER'],
-            sites_vcf=config['references']['SOMALIER']['SITES_VCF'],genomeFasta=config['references']['GENOME'],rname="somalier_extract"
-    # threads: 32
-    shell:  """ 
-        module load singularity  
-	    ANCESTRY_DB={params.ancestry_db}
-        CONTAINER={params.somalier_container}
-        GENOME_FASTA={params.genomeFasta}
-        SITES_VCF={params.sites_vcf}
-	    bam={input.bam}
-        OUT_DIR=$(dirname {output.somalierOut}) #Need to set this path somewhere
-        #mkdir -p $OUT_DIR
-        BAM_BASE=$(basename $bam)
-        SOMALIER_CMDS="date; echo 'Extracting sites';
-                    somalier extract -d /out/ --sites /refs/sites.vcf.gz -f /refs/genome.fa /mnt/$BAM_BASE;
-                    date;"
-            ## Run the commands in the image with binded paths to input/output files
-            singularity exec --bind $GENOME_FASTA:/refs/genome.fa \
-                                     --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \
-                                     --bind $SITES_VCF:/refs/sites.vcf.gz \
-                                     --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \
-                                     --bind $ANCESTRY_DB:/refs/ancestry/ \
-                                     --bind $OUT_DIR:/out \
-                                     --bind $bam:/mnt/$BAM_BASE \
-                                     --bind $bam.bai:/mnt/$BAM_BASE.bai \
-                                     $CONTAINER \
-                                     /bin/sh -c "$SOMALIER_CMDS"
-            """
-  
-rule somalier_analysis:
-    """
-    To estimate relatedness, Somalier uses extracted site information to
-    compare across all samples.  This step also runs the ancestry estimation
-    function in Somalier.
-    @Input:
-        Exracted sites in (binary) somalier format for ALL samples in the cohort
-    @Output:
-        Separate tab-separated value (TSV) files with relatedness and ancestry outputs
-    """
-    input:
-        somalier=expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
-    output:
-        relatedness=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
-        relatednessSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
-        ancestry=os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
-        finalFileGender=os.path.join(output_germline_base,"predicted.genders.tsv"),
-        finalFilePairs=os.path.join(output_germline_base,"predicted.pairs.tsv"),
-        ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
-        pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
-    params: ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],
-            container=config['references']['SOMALIER']['CONTAINER'],
-            sites_vcf=config['references']['SOMALIER']['SITES_VCF'],
-            genomeFasta=config['references']['GENOME'],
-            ver_R=config['tools']['R']['version'],
-            script_path_gender=config['scripts']['genderPrediction'],
-            script_path_samples=config['scripts']['combineSamples'],
-            script_path_pca=config['scripts']['ancestry'],
-            rname="somalier_analysis"
-    shell:  """
-        module load singularity    
-	    ANCESTRY_DB={params.ancestry_db}
-        CONTAINER={params.container}
-        GENOME_FASTA={params.genomeFasta}
-        SITES_VCF={params.sites_vcf}
-        OUT_DIR=$(dirname {output.relatedness}) #Need to set this path somewhere
-        SOMALIER_CMDS="date;
-                    somalier relate -o /out/relatedness /out/*.somalier;
-                    somalier ancestry -o /out/ancestry --labels /refs/ancestry/ancestry-labels-1kg.tsv /refs/ancestry/*.somalier ++ /out/*.somalier;
-                    echo 'Done';
-                    date;"
-        ## Run the commands in the image with binded paths to input/output files
-        singularity exec --bind $GENOME_FASTA:/refs/genome.fa \\
-                                 --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \\
-                                 --bind $SITES_VCF:/refs/sites.vcf.gz \\
-                                 --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \\
-                                 --bind $ANCESTRY_DB:/refs/ancestry/ \\
-                                 --bind $OUT_DIR:/out \\
-                                 $CONTAINER \\
-                                 /bin/sh -c "$SOMALIER_CMDS"
-        
-        module load R/{params.ver_R}
-            
-        Rscript {params.script_path_gender} {output.relatednessSamples} {output.finalFileGender}
-        
-        Rscript {params.script_path_samples} {output.relatedness} {output.finalFilePairs}
-        
-        Rscript {params.script_path_pca} {output.ancestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
-            """
-
-# rule somalier_analysis:
-#     """
-#     Some secondary analyses on Somalier relatedness and ancestry output,
-#     including gender prediction and an interactive ancestry PCA plto.
-#     @Input:
-#         Tab-separated value (TSV) files with relatedness and ancestry outputs from Somalier
-#     @Output:
-#         Plots ancestry PCA (html), plots of predicted pairs (pdf), and TSVs with gender and pairing analysis
-#     """
-#     input:  somalierPairs=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
-#             somalierSamples=os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
-#             somalierAncestry=os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
-#     output: finalFileGender=os.path.join(output_germline_base,"predicted.genders.tsv"),
-#             finalFilePairs=os.path.join(output_germline_base,"predicted.pairs.tsv"),
-#             ancestoryPlot=os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
-#             pairAncestoryHist=os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
-#     group: "somalier"
-#     params: ver_R=config['tools']['R']['version'],
-#             script_path_gender=config['scripts']['genderPrediction'],
-#             script_path_samples=config['scripts']['combineSamples'],
-#             script_path_pca=config['scripts']['ancestry'],
-#             rname = "genderPrediction"
-#     shell: """
-#             module load R/{params.ver_R}
-#             
-#             Rscript {params.script_path_gender} {input.somalierSamples} {output.finalFileGender}
-#             
-#             Rscript {params.script_path_samples} {input.somalierPairs} {output.finalFilePairs}
-#             
-#             Rscript {params.script_path_pca} {input.somalierAncestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
-#     """
-
-
 # Quality-control related rules
 rule fc_lane:
     """
@@ -155,8 +20,9 @@ rule fc_lane:
     params:
         rname = 'pl:fc_lane',
         get_flowcell_lanes = os.path.join("workflow", "scripts", "get_flowcell_lanes.py"),
+    envmodules: 'python/2.7'
+    container: config['images']['python']
     shell: """
-    module load python/2.7
     python {params.get_flowcell_lanes} \\
         {input.r1} \\
         {wildcards.samples} > {output.txt}
@@ -223,14 +89,18 @@ rule kraken:
         rname  ='pl:kraken',
         outdir = os.path.join(output_qcdir, "kraken"),
         bacdb  = config['references']['KRAKENBACDB'],
+        localdisk = config['input_params']['tmpdisk']
+    envmodules:
+        'kraken/2.1.2', 
+        'kronatools/2.8'
+    container: config['images']['kraken']
     threads: 24
     shell: """
-    module load kraken/2.1.2
-    module load kronatools/2.8
     # Copy kraken2 db to local node storage to reduce filesystem strain
-    cp -rv {params.bacdb} /lscratch/$SLURM_JOBID/
+    mkdir -p {params.localdisk}
+    cp -rv {params.bacdb} {params.localdisk}
     kdb_base=$(basename {params.bacdb})
-    kraken2 --db /lscratch/$SLURM_JOBID/${{kdb_base}} \\
+    kraken2 --db {params.localdisk}/${{kdb_base}} \\
         --threads {threads} --report {output.taxa} \\
         --output {output.out} \\
         --gzip-compressed \\
@@ -259,11 +129,11 @@ rule fastqc_bam:
     params:
         outdir = output_qcdir,
         rname  = "fastqc_bam",
-    # group: "quick_qc_steps"
     message: "Running FastQC with {threads} threads on '{input}' input file"
     threads: 8
+    envmodules: 'fastqc/0.11.9'
+    container: config['images']['fastqc']
     shell: """
-    module load fastqc/0.11.9
     fastqc -t {threads} \\
         -f bam \\
         -o {params.outdir} \\
@@ -286,11 +156,13 @@ rule reformat_targets_bed:
     params:
         script_path_reformat_bed=config['scripts']['reformat_bed'],
         rname  = "reformat_bed"
-    # group: "quick_qc_steps"
     message: "Formatting targets bed file"
+    envmodules: 'python/3.7'
+    container: config['images']['python']
     shell: """
-    module load python/3.7
-    python {params.script_path_reformat_bed} --input_bed {input.targets} --output_bed {output.bed}
+    python {params.script_path_reformat_bed} \\
+        --input_bed {input.targets} \\
+        --output_bed {output.bed}
     """
     
     
@@ -314,11 +186,11 @@ rule qualimap_bamqc:
     params:
         outdir = os.path.join(output_qcdir, "{samples}"),
         rname  = "qualibam"
-    # group: "quick_qc_steps"
     message: "Running QualiMap BAM QC with {threads} threads on '{input}' input file"
+    envmodules: 'qualimap/2.2.1'
+    container: config['images']['qualimap']
     threads: 8
     shell: """
-    module load qualimap/2.2.1
     unset DISPLAY
     qualimap bamqc -bam {input.bam} \\
         --java-mem-size=48G \\
@@ -348,7 +220,6 @@ rule samtools_flagstats:
         bam  = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
     output:
         txt  = os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt")
-    # group: "quick_qc_steps"
     params: 
         rname = "samtools_flagstats"
     message: "Running SAMtools flagstat on '{input}' input file"
@@ -374,7 +245,6 @@ rule vcftools:
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
     output: 
         het = os.path.join(output_qcdir,"raw_variants.het"),
-    # group: "quick_qc_steps"
     params: 
         prefix = os.path.join(output_qcdir,"raw_variants"),
         rname  = "vcftools",
@@ -405,8 +275,9 @@ rule collectvariantcallmetrics:
         prefix = os.path.join(output_qcdir,"raw_variants"),
         rname="varcallmetrics",
     message: "Running Picard CollectVariantCallingMetrics on '{input.vcf}' input file"
+    envmodules: 'picard/2.20.8'
+    container: config['images']['picard']
     shell: """
-    module load picard/2.20.8
     java -Xmx24g -jar ${{PICARDJARPATH}}/picard.jar \\
         CollectVariantCallingMetrics \\
         INPUT={input.vcf} \\
@@ -432,13 +303,13 @@ rule bcftools_stats:
         vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz"),
     output: 
         txt = os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"),
-    # group: "quick_qc_steps"
     params: 
         rname="bcfstats",
     shell: """
     module load bcftools/1.9
     bcftools stats {input.vcf} > {output.txt}
     """
+
 
 rule gatk_varianteval:
     """
@@ -490,7 +361,6 @@ rule snpeff:
         vcf  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.vcf"),
         csv  = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.csv"),
         html = os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"),
-    # group: "quick_qc_steps"
     params: 
         rname  = "snpeff",
         genome = config['references']['SNPEFF_GENOME'],
@@ -505,6 +375,110 @@ rule snpeff:
         {input.vcf} > {output.vcf}
     """
 
+rule somalier_extract:
+    """
+    To estimate ancestry, Somalier first extracts known sites from mapped reads
+    @Input:
+        Mapped and pre-processed BAM file
+    @Output:
+        Exracted sites in (binary) somalier format
+    """
+    input:
+        bam = os.path.join(output_bamdir,"final_bams","{samples}.bam"),
+        bai = os.path.join(output_bamdir,"final_bams","{samples}.bai"),
+    output: 
+        somalierOut = os.path.join(output_germline_base,"somalier","{samples}.somalier")
+    params:
+        ancestry_db = config['references']['SOMALIER']['ANCESTRY_DB'],
+        somalier_container = config['references']['SOMALIER']['CONTAINER'],
+        sites_vcf = config['references']['SOMALIER']['SITES_VCF'],
+        genomeFasta = config['references']['GENOME'],
+        rname="somalier_extract"
+    shell:  """ 
+    module load singularity  
+	ANCESTRY_DB={params.ancestry_db}
+    CONTAINER={params.somalier_container}
+    GENOME_FASTA={params.genomeFasta}
+    SITES_VCF={params.sites_vcf}
+	bam={input.bam}
+    OUT_DIR=$(dirname {output.somalierOut})
+    BAM_BASE=$(basename $bam)
+    SOMALIER_CMDS="date; echo 'Extracting sites';
+        somalier extract -d /out/ --sites /refs/sites.vcf.gz -f /refs/genome.fa /mnt/$BAM_BASE;
+        date;"
+    
+    # Run the commands in the image with binded paths to input/output files
+    singularity exec --bind $GENOME_FASTA:/refs/genome.fa \\
+        --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \\
+        --bind $SITES_VCF:/refs/sites.vcf.gz \\
+        --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \\
+        --bind $ANCESTRY_DB:/refs/ancestry/ \\
+        --bind $OUT_DIR:/out \\
+        --bind $bam:/mnt/$BAM_BASE \\
+        --bind $bam.bai:/mnt/$BAM_BASE.bai \\
+        $CONTAINER \\
+        /bin/sh -c "$SOMALIER_CMDS"
+    """
+
+
+rule somalier_analysis:
+    """
+    To estimate relatedness, Somalier uses extracted site information to
+    compare across all samples. This step also runs the ancestry estimation
+    function in Somalier.
+    @Input:
+        Exracted sites in (binary) somalier format for ALL samples in the cohort
+    @Output:
+        Separate tab-separated value (TSV) files with relatedness and ancestry outputs
+    """
+    input:
+        somalier=expand(os.path.join(output_germline_base,"somalier","{samples}.somalier"), samples=samples),
+    output:
+        relatedness = os.path.join(output_germline_base,"somalier","relatedness.pairs.tsv"),
+        relatednessSamples = os.path.join(output_germline_base,"somalier","relatedness.samples.tsv"),
+        ancestry = os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
+        finalFileGender = os.path.join(output_germline_base,"predicted.genders.tsv"),
+        finalFilePairs = os.path.join(output_germline_base,"predicted.pairs.tsv"),
+        ancestoryPlot = os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
+        pairAncestoryHist = os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
+    params:
+        ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],
+        container=config['references']['SOMALIER']['CONTAINER'],
+        sites_vcf=config['references']['SOMALIER']['SITES_VCF'],
+        genomeFasta=config['references']['GENOME'],
+        ver_R=config['tools']['R']['version'],
+        script_path_gender=config['scripts']['genderPrediction'],
+        script_path_samples=config['scripts']['combineSamples'],
+        script_path_pca=config['scripts']['ancestry'],
+        rname="somalier_analysis"
+    shell:  """
+    module load singularity    
+	ANCESTRY_DB={params.ancestry_db}
+    CONTAINER={params.container}
+    GENOME_FASTA={params.genomeFasta}
+    SITES_VCF={params.sites_vcf}
+    OUT_DIR=$(dirname {output.relatedness}) #Need to set this path somewhere
+    SOMALIER_CMDS="date;
+        somalier relate -o /out/relatedness /out/*.somalier;
+        somalier ancestry -o /out/ancestry --labels /refs/ancestry/ancestry-labels-1kg.tsv /refs/ancestry/*.somalier ++ /out/*.somalier;
+        echo 'Done';
+        date;"
+    
+    # Run the commands in the image with binded paths to input/output files
+    singularity exec --bind $GENOME_FASTA:/refs/genome.fa \\
+        --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \\
+        --bind $SITES_VCF:/refs/sites.vcf.gz \\
+        --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \\
+        --bind $ANCESTRY_DB:/refs/ancestry/ \\
+        --bind $OUT_DIR:/out \\
+        $CONTAINER \\
+        /bin/sh -c "$SOMALIER_CMDS"
+    
+    module load R/{params.ver_R}
+    Rscript {params.script_path_gender} {output.relatednessSamples} {output.finalFileGender}    
+    Rscript {params.script_path_samples} {output.relatedness} {output.finalFilePairs}
+    Rscript {params.script_path_pca} {output.ancestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
+    """
 
 rule multiqc:
     """
@@ -536,8 +510,9 @@ rule multiqc:
     params: 
         rname  = "multiqc",
         workdir = os.path.join(BASEDIR)
+    envmodules: 'multiqc/1.11'
+    container: config['images']['multiqc']
     shell: """
-    module load multiqc/1.11
     multiqc --ignore '*/.singularity/*' \\
         --ignore '*/*/*/*/*/*/*/*/pyflow.data/*' \\
         --ignore 'slurmfiles/' \\
