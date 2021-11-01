@@ -141,6 +141,7 @@ rule fastqc_bam:
         {input.bam} 
     """
 
+
 rule reformat_targets_bed:
     """
     Qualimap requires a 6-field BED file for coverage estimation.
@@ -224,8 +225,9 @@ rule samtools_flagstats:
     params: 
         rname = "samtools_flagstats"
     message: "Running SAMtools flagstat on '{input}' input file"
+    envmodules: 'samtools/1.12'
+    container: config['images']['wes_base']
     shell: """
-    module load samtools/1.12
     samtools flagstat {input.bam} > {output.txt}
     """
 
@@ -250,8 +252,9 @@ rule vcftools:
         prefix = os.path.join(output_qcdir,"raw_variants"),
         rname  = "vcftools",
     message: "Running VCFtools on '{input.vcf}' input file"
+    envmodules: 'vcftools/0.1.16'
+    container: config['images']['wes_base']
     shell: """
-    module load vcftools/0.1.16
     vcftools --gzvcf {input.vcf} --het --out {params.prefix}
     """
 
@@ -306,8 +309,10 @@ rule bcftools_stats:
         txt = os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"),
     params: 
         rname="bcfstats",
+    message: "Running BCFtools on '{input.vcf}' input file"
+    envmodules: 'bcftools/1.9'
+    container: config['images']['wes_base']
     shell: """
-    module load bcftools/1.9
     bcftools stats {input.vcf} > {output.txt}
     """
 
@@ -334,9 +339,11 @@ rule gatk_varianteval:
         genome   = config['references']['GENOME'],
         dbsnp    = config['references']['DBSNP'],
         ver_gatk = config['tools']['gatk4']['version']
+    message: "Running GATK4 VariantEval on '{input.vcf}' input file"
+    envmodules: 'GATK/4.2.0.0'
+    container: config['images']['wes_base']
     threads: 16
     shell: """
-    module load GATK/{params.ver_gatk}
     gatk --java-options '-Xmx12g -XX:ParallelGCThreads={threads}' VariantEval \\
         -R {params.genome} \\
         -O {output.grp} \\
@@ -375,6 +382,7 @@ rule snpeff:
         {params.genome} \\
         {input.vcf} > {output.vcf}
     """
+
 
 rule somalier_extract:
     """
