@@ -93,6 +93,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # bwa/0.7.17  bowtie/1.2.3  bowtie2/2.3.5.1 
 # bedtools/2.27.1  bedops/2.4.37  samtools/1.10 
 # bcftools/1.10.2  vcftools/0.1.16  trimmomatic/0.39
+# tabix/1.10.2
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
       bcftools \
       bedops \
@@ -101,14 +102,34 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
       bowtie2 \
       bwa \
       samtools \
+      tabix \
       trimmomatic \
       vcftools
 
-# Install GATK/4.2.2
-RUN wget https://github.com/broadinstitute/gatk/archive/refs/tags/4.2.1.0.zip \
-    && unzip /opt2/4.2.1.0.zip \
-    && rm /opt2/4.2.1.0.zip
-ENV PATH="/opt2/gatk-4.2.1.0/:$PATH"
+# Install Sambamba/0.8.1 for CNTRL-Freec
+# not available to apt-get on Ubuntu 20.04
+RUN wget https://github.com/biod/sambamba/releases/download/v0.8.1/sambamba-0.8.1-linux-amd64-static.gz \
+    && gzip -d /opt2/sambamba-0.8.1-linux-amd64-static.gz \
+    && mv /opt2/sambamba-0.8.1-linux-amd64-static /opt2/sambamba \
+    && chmod a+rx /opt2/sambamba
+
+# Install GATK4 (GATK/4.2.2.0)
+# Requires Java8 or 1.8
+RUN wget https://github.com/broadinstitute/gatk/releases/download/4.2.2.0/gatk-4.2.2.0.zip \
+    && unzip /opt2/gatk-4.2.2.0.zip \
+    && rm /opt2/gatk-4.2.2.0.zip \
+    && /opt2/gatk-4.2.2.0/gatk --list
+ENV PATH="/opt2/gatk-4.2.2.0:$PATH"
+
+# Install last release of GATK3 (GATK/3.8-1)
+# Only being used for the CombineVariants
+# command that is not available in GATK4
+# Available via env variable: $GATK_JAR
+# Requires Java8 or 1.8
+RUN wget https://storage.googleapis.com/gatk-software/package-archive/gatk/GenomeAnalysisTK-3.8-1-0-gf15c1c3ef.tar.bz2 \
+    && tar -xvjf /opt2/GenomeAnalysisTK-3.8-1-0-gf15c1c3ef.tar.bz2 \
+    && rm /opt2/GenomeAnalysisTK-3.8-1-0-gf15c1c3ef.tar.bz2
+ENV GATK_JAR="/opt2/GenomeAnalysisTK-3.8-1-0-gf15c1c3ef/GenomeAnalysisTK.jar"
 
 # Install dependencies needed to add a new repository over HTTPS
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -129,13 +150,51 @@ RUN Rscript -e 'install.packages(c("argparse", "knitr", "tidyverse", "dplyr", "p
 RUN Rscript -e 'install.packages(c("shiny", "gridExtra", "flexdashboard", "rmarkdown", "crosstalk", "DT", "reshape2", "circlize", "viridis"), repos="http://cran.r-project.org")'
 RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "ComplexHeatmap"))'
 
+# Install Control-FREEC/v11.6 and additional dependencies
+# Requires R, samtools, bedtools, sambamba (already satisfied)
+# http://boevalab.inf.ethz.ch/FREEC/tutorial.html#install
+RUN wget https://github.com/BoevaLab/FREEC/archive/refs/tags/v11.6.zip \
+    && unzip /opt2/v11.6.zip \
+    && rm /opt2/v11.6.zip \
+    && cd /opt2/FREEC-11.6/src/ \
+    && make
+ENV PATH="/opt2/FREEC-11.6/src:$PATH"
+WORKDIR /opt2 
+
+# Install Sequenza-Utils/3.0.0 and Sequenza
+# Requires R, Python, SAMtools, tabix (already satisfied)
+# https://cran.r-project.org/web/packages/sequenza/vignettes/sequenza.html#getting-started
+RUN pip3 install --upgrade pip \
+	  && pip3 install sequenza-utils \
+      && Rscript -e 'BiocManager::install(c("copynumber")); install.packages(c("sequenza"), repos="http://cran.r-project.org")'
+
+# Install Somalier/v0.2.13
+# download static binary
+RUN wget https://github.com/brentp/somalier/releases/download/v0.2.13/somalier \
+    && chmod a+rx /opt2/somalier
+
+# Install VarScan/v2.4.4
+# Works with java8
+# and each wrapper script similar to HPC module
+RUN wget https://github.com/dkoboldt/varscan/raw/master/VarScan.v2.4.4.jar \
+    && echo '#!/bin/bash' > /opt2/varscan \
+    && echo 'java -jar /opt2/VarScan.v2.4.4.jar  "$@"' >> /opt2/varscan \
+    && chmod a+rx /opt2/varscan
+
 # Add Dockerfile and argparse.bash script
 # and export environment variables
+# and set java8 as default with links
+# to alternative versions
 ADD Dockerfile /opt2/base_gatk4_wes.dockerfile
 COPY argparse.bash /opt2
-RUN chmod -R a+rX /opt2 && chmod -R a+x /opt2/argparse.bash
+RUN chmod -R a+rX /opt2 \
+    && chmod -R a+x /opt2/argparse.bash \
+    && ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java /usr/bin/java11 \
+    && ln -s /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java8 \
+    && ln -fs /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java
 ENV PATH="/opt2/:$PATH"
 ENV TRIMMOJAR="/usr/share/java/trimmomatic-0.39.jar"
+
 WORKDIR /data2
 
 # Clean-up step to reduce size
