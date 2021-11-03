@@ -181,6 +181,16 @@ RUN wget https://github.com/dkoboldt/varscan/raw/master/VarScan.v2.4.4.jar \
     && echo 'java -jar /opt2/VarScan.v2.4.4.jar  "$@"' >> /opt2/varscan \
     && chmod a+rx /opt2/varscan
 
+# Install snpEff/4.3t
+# Works with java8
+# Deleted bundled version of clinEff, not being used
+# Setting env variable to jar file similar to HPC module
+RUN wget https://sourceforge.net/projects/snpeff/files/snpEff_v4_3t_core.zip \
+    && unzip /opt2/snpEff_v4_3t_core.zip \
+    && rm /opt2/snpEff_v4_3t_core.zip \
+    && rm -rf /opt2/clinEff/
+ENV SNPEFF_JAR="/opt2/snpEff/snpEff.jar"
+
 # Add Dockerfile and argparse.bash script
 # and export environment variables
 # and set java8 as default with links
