@@ -191,6 +191,15 @@ RUN wget https://sourceforge.net/projects/snpeff/files/snpEff_v4_3t_core.zip \
     && rm -rf /opt2/clinEff/
 ENV SNPEFF_JAR="/opt2/snpEff/snpEff.jar"
 
+# Install samblaster/0.1.26
+# Requires g++ and make (already satisfied)
+RUN git clone git://github.com/GregoryFaust/samblaster.git \
+    && cd /opt2/samblaster \
+    && make \
+    && chmod a+rX /opt2/samblaster/samblaster
+ENV PATH="/opt2/samblaster:$PATH"
+WORKDIR /opt2
+
 # Add Dockerfile and argparse.bash script
 # and export environment variables
 # and set java8 as default with links
@@ -202,7 +211,7 @@ RUN chmod -R a+rX /opt2 \
     && ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java /usr/bin/java11 \
     && ln -s /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java8 \
     && ln -fs /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java
-ENV PATH="/opt2/:$PATH"
+ENV PATH="/opt2:$PATH"
 ENV TRIMMOJAR="/usr/share/java/trimmomatic-0.39.jar"
 
 WORKDIR /data2
