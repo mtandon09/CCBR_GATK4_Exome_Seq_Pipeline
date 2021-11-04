@@ -15,7 +15,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
 
 # This section installs system packages required for your project
 # If you need extra system packages add them here.
-# python/3.8.0
+# python/3.8.0 and python/2.7.16 (strelka and manta)
 RUN apt-get update \
  && apt-get -y upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -33,6 +33,7 @@ RUN apt-get update \
       openjdk-8-jdk \
       parallel \
       pigz \
+      python2 \
       python3 \
       python3-pip \
       unzip \
@@ -199,6 +200,31 @@ RUN git clone git://github.com/GregoryFaust/samblaster.git \
     && chmod a+rX /opt2/samblaster/samblaster
 ENV PATH="/opt2/samblaster:$PATH"
 WORKDIR /opt2
+
+# Install strelka/2.9.10, requires python2.7 (already satisfied)
+# and set python2.7 as the default interpreter
+RUN wget https://github.com/Illumina/strelka/releases/download/v2.9.10/strelka-2.9.10.centos6_x86_64.tar.bz2 \
+    && tar -xvjf /opt2/strelka-2.9.10.centos6_x86_64.tar.bz2 \
+    && rm /opt2/strelka-2.9.10.centos6_x86_64.tar.bz2 \
+    && ln -fs /usr/bin/python2.7 /usr/bin/python2
+ENV PATH="/opt2/strelka-2.9.10.centos6_x86_64/bin:$PATH"
+
+# Install manta/1.6.0
+# Requires apt-get packages: bzip2 gcc g++ make python zlib1g-dev (already satisfied)
+# Delete demo data (frees 275 MB)
+RUN wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.centos6_x86_64.tar.bz2 \
+    && tar -xvjf /opt2/manta-1.6.0.centos6_x86_64.tar.bz2 \
+    && rm /opt2/manta-1.6.0.centos6_x86_64.tar.bz2 \
+    && rm -rf /opt2/manta-1.6.0.centos6_x86_64/share/demo/ \
+    && ln -fs /usr/bin/python2.7 /usr/bin/python2
+ENV PATH="/opt2/manta-1.6.0.centos6_x86_64/bin:$PATH"
+
+# Install VarDict/1.8.2
+# Requires java8 (jdk 1.8 or later), perl and R (already satisfied)
+RUN wget https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/VarDict-1.8.2.tar \
+    && tar -xvf /opt2/VarDict-1.8.2.tar \
+    && rm /opt2/VarDict-1.8.2.tar
+ENV PATH="/opt2/VarDict-1.8.2/bin:$PATH"
 
 # Add Dockerfile and argparse.bash script
 # and export environment variables
