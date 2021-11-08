@@ -309,9 +309,9 @@ cnv_sample_list=[]
 if 'CNV_CALLING' in config['input_params']:
     if config['input_params']['CNV_CALLING'].lower() in ['true','t','yes']:
         if 'TN_MODE' in config['input_params']:
-            if config['input_params']['TN_MODE'].lower() in ['paired','tumor_normal']:
+            if (config['input_params']['TN_MODE'].lower() in ['paired','tumor_normal'] or
+            config['input_params']['PAIRS_FILE'] != "None"):
                 cnv_sample_list=pairs_ids
-    
 
 #### July 28, 2021
 ## When I tried to run large data set through this pipeline (224 samples from CCLE),
