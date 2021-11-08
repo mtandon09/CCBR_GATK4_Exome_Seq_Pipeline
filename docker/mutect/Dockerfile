@@ -49,4 +49,6 @@ ENV MUTECT_JARPATH="/opt2/mirror-muTect-1.1.7"
 RUN ln -fs /usr/lib/jvm/java-7-openjdk-amd64/bin/java /usr/bin/java7
 
 # Reset working directory
+ADD Dockerfile /opt2/
+RUN chmod -R a+rwX /opt2
 WORKDIR /data2
