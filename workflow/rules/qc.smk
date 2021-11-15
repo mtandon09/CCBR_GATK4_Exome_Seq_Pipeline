@@ -373,8 +373,9 @@ rule snpeff:
         rname  = "snpeff",
         genome = config['references']['SNPEFF_GENOME'],
         config = config['references']['SNPEFF_CONFIG']
+    envmodules: 'snpEff/4.3t'
+    container: config['images']['wes_base']
     shell: """
-    module load snpEff/4.3t
     java -Xmx12g -jar $SNPEFF_JAR \\
         -v -canon -c {params.config} \\
         -csvstats {output.csv} \\
@@ -398,35 +399,17 @@ rule somalier_extract:
     output: 
         somalierOut = os.path.join(output_germline_base,"somalier","{samples}.somalier")
     params:
-        ancestry_db = config['references']['SOMALIER']['ANCESTRY_DB'],
-        somalier_container = config['references']['SOMALIER']['CONTAINER'],
         sites_vcf = config['references']['SOMALIER']['SITES_VCF'],
         genomeFasta = config['references']['GENOME'],
-        rname="somalier_extract"
-    shell:  """ 
-    module load singularity  
-	ANCESTRY_DB={params.ancestry_db}
-    CONTAINER={params.somalier_container}
-    GENOME_FASTA={params.genomeFasta}
-    SITES_VCF={params.sites_vcf}
-	bam={input.bam}
-    OUT_DIR=$(dirname {output.somalierOut})
-    BAM_BASE=$(basename $bam)
-    SOMALIER_CMDS="date; echo 'Extracting sites';
-        somalier extract -d /out/ --sites /refs/sites.vcf.gz -f /refs/genome.fa /mnt/$BAM_BASE;
-        date;"
-    
-    # Run the commands in the image with binded paths to input/output files
-    singularity exec --bind $GENOME_FASTA:/refs/genome.fa \\
-        --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \\
-        --bind $SITES_VCF:/refs/sites.vcf.gz \\
-        --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \\
-        --bind $ANCESTRY_DB:/refs/ancestry/ \\
-        --bind $OUT_DIR:/out \\
-        --bind $bam:/mnt/$BAM_BASE \\
-        --bind $bam.bai:/mnt/$BAM_BASE.bai \\
-        $CONTAINER \\
-        /bin/sh -c "$SOMALIER_CMDS"
+        rname = 'somalier_extract'
+    container: config['images']['wes_base']
+    shell: """ 
+    echo "Extracting sites to estimate ancestry"
+    somalier extract \\
+        -d "$(dirname {output.somalierOut})" \\
+        --sites {params.sites_vcf} \\
+        -f {params.genomeFasta} \\
+        {input.bam}
     """
 
 
@@ -451,42 +434,40 @@ rule somalier_analysis:
         ancestoryPlot = os.path.join(output_germline_base,"sampleAncestryPCAPlot.html"),
         pairAncestoryHist = os.path.join(output_germline_base,"predictedPairsAncestry.pdf"),
     params:
-        ancestry_db=config['references']['SOMALIER']['ANCESTRY_DB'],
-        container=config['references']['SOMALIER']['CONTAINER'],
-        sites_vcf=config['references']['SOMALIER']['SITES_VCF'],
-        genomeFasta=config['references']['GENOME'],
-        ver_R=config['tools']['R']['version'],
-        script_path_gender=config['scripts']['genderPrediction'],
-        script_path_samples=config['scripts']['combineSamples'],
-        script_path_pca=config['scripts']['ancestry'],
-        rname="somalier_analysis"
-    shell:  """
-    module load singularity    
-	ANCESTRY_DB={params.ancestry_db}
-    CONTAINER={params.container}
-    GENOME_FASTA={params.genomeFasta}
-    SITES_VCF={params.sites_vcf}
-    OUT_DIR=$(dirname {output.relatedness}) #Need to set this path somewhere
-    SOMALIER_CMDS="date;
-        somalier relate -o /out/relatedness /out/*.somalier;
-        somalier ancestry -o /out/ancestry --labels /refs/ancestry/ancestry-labels-1kg.tsv /refs/ancestry/*.somalier ++ /out/*.somalier;
-        echo 'Done';
-        date;"
+        ancestry_db = config['references']['SOMALIER']['ANCESTRY_DB'],
+        sites_vcf = config['references']['SOMALIER']['SITES_VCF'],
+        genomeFasta = config['references']['GENOME'],
+        script_path_gender = config['scripts']['genderPrediction'],
+        script_path_samples = config['scripts']['combineSamples'],
+        script_path_pca = config['scripts']['ancestry'],
+        rname = 'somalier_analysis'
+    container: config['images']['wes_base']
+    shell: """ 
+    echo "Estimating relatedness"
+    somalier relate \\
+        -o "$(dirname {output.relatedness})/relatedness" \\
+        {input.somalier}
     
-    # Run the commands in the image with binded paths to input/output files
-    singularity exec --bind $GENOME_FASTA:/refs/genome.fa \\
-        --bind $GENOME_FASTA.fai:/refs/genome.fa.fai \\
-        --bind $SITES_VCF:/refs/sites.vcf.gz \\
-        --bind $SITES_VCF.tbi:/refs/sites.vcf.gz.tbi \\
-        --bind $ANCESTRY_DB:/refs/ancestry/ \\
-        --bind $OUT_DIR:/out \\
-        $CONTAINER \\
-        /bin/sh -c "$SOMALIER_CMDS"
+    echo "Estimating ancestry"
+    somalier ancestry \\
+        -o "$(dirname {output.relatedness})/ancestry" \\
+        --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
+        {params.ancestry_db}/*.somalier ++ \\
+        {input.somalier}
+
+    Rscript {params.script_path_gender} \\
+        {output.relatednessSamples} \\
+        {output.finalFileGender}    
     
-    module load R/{params.ver_R}
-    Rscript {params.script_path_gender} {output.relatednessSamples} {output.finalFileGender}    
-    Rscript {params.script_path_samples} {output.relatedness} {output.finalFilePairs}
-    Rscript {params.script_path_pca} {output.ancestry} {output.finalFilePairs} {output.ancestoryPlot} {output.pairAncestoryHist}
+    Rscript {params.script_path_samples} \\
+        {output.relatedness} \\
+        {output.finalFilePairs}
+    
+    Rscript {params.script_path_pca} \\
+        {output.ancestry} \\
+        {output.finalFilePairs} \\
+        {output.ancestoryPlot} \\
+        {output.pairAncestoryHist}
     """
 
 
