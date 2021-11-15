@@ -228,7 +228,7 @@ rule mutect_paired:
     container:
         config['images']['mutect']
     shell: """
-    if [ ! -d "$(dirname {output.vcf})" ]; then mkdir -p "$myoutdir"; fi
+    if [ ! -d "$(dirname {output.vcf})" ]; then mkdir -p "$(dirname {output.vcf})"; fi
     
     java -Xmx8g -Djava.io.tmpdir={params.tmpdir} -jar ${{MUTECT_JAR}} \\
         --analysis_type MuTect \\
@@ -302,7 +302,7 @@ rule vardict_paired:
     container:
         config['images']['wes_base']
     shell: """
-    if [ ! -d "$(dirname {output.vcf})" ]; then mkdir -p "$myoutdir"; fi
+    if [ ! -d "$(dirname {output.vcf})" ]; then mkdir -p "$(dirname {output.vcf})"; fi
     VarDict \\
         -G {params.genome} \\
         -f 0.05 \\
