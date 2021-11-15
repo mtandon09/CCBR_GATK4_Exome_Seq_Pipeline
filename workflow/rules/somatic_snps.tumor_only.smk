@@ -72,8 +72,8 @@ rule contamination_single:
         genome = config['references']['GENOME'],
         germsource = config['references']['1000GSNP'],
         ver_gatk = config['tools']['gatk4']['version'],
-        chroms=chroms, 
-        rname='contamination'
+        chroms = chroms, 
+        rname = 'contamination'
     envmodules:
         'GATK/4.2.0.0'
     container:
@@ -213,12 +213,12 @@ rule vardict_filter_single:
         pon = config['references']['PON'],
         ver_gatk = config['tools']['gatk4']['version'],
         ver_bcftools = config['tools']['bcftools']['version'],
-        rname = 'vardict_filter'
-        tmpdir = '/lscratch/$SLURM_JOBID',
+        rname = 'vardict_filter', 
+        tmpdir = '/lscratch/$SLURM_JOBID'
     threads: 4
     envmodules:
         'bcftools/1.9',
-        'GATK/4.2.0.0',
+        'GATK/4.2.0.0'
     container:
         config['images']['wes_base']
     shell: """
