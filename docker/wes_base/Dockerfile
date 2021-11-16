@@ -234,9 +234,10 @@ ENV PATH="/opt2/VarDict-1.8.2/bin:$PATH"
 # to alternative versions
 ADD Dockerfile /opt2/base_gatk4_wes.dockerfile
 COPY argparse.bash /opt2
+# Trimmomatic requires java11
 ENV TRIMMOMATIC_JAR="/usr/share/java/trimmomatic-0.39.jar"
 RUN echo '#!/bin/bash' > /opt2/trimmomatic \
-    && echo 'java -jar "$TRIMMOMATIC_JAR" "$@"' >> /opt2/trimmomatic \
+    && echo 'java11 -jar "$TRIMMOMATIC_JAR" "$@"' >> /opt2/trimmomatic \
     && chmod +x /opt2/trimmomatic
 RUN chmod -R a+rX /opt2 \
     && chmod a+x /opt2/argparse.bash \
