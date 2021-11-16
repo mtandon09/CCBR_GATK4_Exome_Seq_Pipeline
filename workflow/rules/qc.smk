@@ -23,6 +23,10 @@ rule fc_lane:
     envmodules: 'python/2.7'
     container: config['images']['python']
     shell: """
+    if [ ! -d "$(dirname {output.txt})" ]; then 
+        mkdir -p "$(dirname {output.txt})"
+    fi
+    
     python {params.get_flowcell_lanes} \\
         {input.r1} \\
         {wildcards.samples} > {output.txt}
