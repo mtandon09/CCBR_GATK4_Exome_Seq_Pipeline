@@ -56,8 +56,7 @@ rule trimmomatic:
         one = temp(os.path.join(output_fqdir, "{samples}.R1.trimmed.fastq.gz")),
         two = temp(os.path.join(output_fqdir, "{samples}.R1.trimmed.unpair.fastq.gz")),
         three = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.fastq.gz")),
-        four = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.unpair.fastq.gz")),
-        err = os.path.join(output_fqdir, "{samples}_run_trimmomatic.err")
+        four = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.unpair.fastq.gz"))
     params:
         adapterfile = config['references']['trimmomatic.adapters'],
         ver = config['tools']['trimmomatic']['version'],
@@ -79,7 +78,7 @@ rule trimmomatic:
         LEADING:10 \\
         TRAILING:10 \\
         SLIDINGWINDOW:4:20 \\
-        MINLEN:20 2> {output.err}     
+        MINLEN:20      
     """
 
 
