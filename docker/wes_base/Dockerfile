@@ -228,12 +228,18 @@ ENV PATH="/opt2/VarDict-1.8.2/bin:$PATH"
 
 # Add Dockerfile and argparse.bash script
 # and export environment variables
+# and creating a backwards compatible
+# wrapper for Biowulf's trimmomatic/0.39
 # and set java8 as default with links
 # to alternative versions
 ADD Dockerfile /opt2/base_gatk4_wes.dockerfile
 COPY argparse.bash /opt2
+ENV TRIMMOMATIC_JAR="/usr/share/java/trimmomatic-0.39.jar"
+RUN echo '#!/bin/bash' > /opt2/trimmomatic \
+    && echo 'java -jar "$TRIMMOMATIC_JAR" "$@"' >> /opt2/trimmomatic \
+    && chmod +x /opt2/trimmomatic
 RUN chmod -R a+rX /opt2 \
-    && chmod -R a+x /opt2/argparse.bash \
+    && chmod a+x /opt2/argparse.bash \
     && ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java /usr/bin/java11 \
     && ln -s /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java8 \
     && ln -fs /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java
