@@ -181,7 +181,7 @@ rule somatic_mafs:
         tumorsample = '{samples}',
         genome = config['references']['MAF_GENOME'],
         filtervcf = config['references']['MAF_FILTERVCF'],
-        rname = "pl:vcf2maf",
+        rname = 'vcf2maf',
         vcf2maf_script = VCF2MAF_WRAPPER
     shell: """
     echo "Converting to MAF..."
