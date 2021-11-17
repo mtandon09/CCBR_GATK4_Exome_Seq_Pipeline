@@ -65,7 +65,7 @@ rule sequenza:
         tumorsample = "{samples}",
         gc = config['references']['SEQUENZAGC'],
         run_script = config['scripts']['run_sequenza'],
-        rname = "sequenza"
+        rname = 'sequenza'
     threads: 8
     envmodules:
         'sequenza-utils/2.2.0',
@@ -122,7 +122,7 @@ rule freec_exome_somatic_pass2:
         config_script = config['scripts']['freec_p2_config'],
         sig_script = config['scripts']['freec_significance'],
         plot_script = config['scripts']['freec_plot'],
-        rname = "pl:freec",
+        rname = 'freec',
     envmodules:
         'freec/11.5',
         'samtools/1.9',

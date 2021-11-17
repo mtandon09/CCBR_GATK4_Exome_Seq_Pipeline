@@ -142,12 +142,12 @@ rule germline_merge_chrom:
     shell:
         """
         # Avoids ARG_MAX issue which limits max length of a command
-        ls -d $(dirname "{output.clist}")/raw_variants.*.vcf.gz > "{output.clist}"
+        ls --color=never -d $(dirname "{output.clist}")/raw_variants.*.vcf.gz > "{output.clist}"
 
         gatk MergeVcfs \\
             -R {params.genome} \\
-            --INPUT="{output.clist}" \\
-            --OUTPUT={output.vcf}
+            --INPUT {output.clist} \\
+            --OUTPUT {output.vcf}
         """
 
 

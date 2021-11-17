@@ -99,8 +99,11 @@ rule mutect_single:
         ver_mutect = config['tools']['mutect']['version'],
         rname = 'mutect',
         tmpdir = '/lscratch/$SLURM_JOBID'
+    envmodules:
+        'muTect/1.1.7'
+    container:
+        config['images']['mutect']
     shell: """
-
     if [ ! -d "$(dirname {output.vcf})" ]; then 
         mkdir -p "$(dirname {output.vcf})"
     fi

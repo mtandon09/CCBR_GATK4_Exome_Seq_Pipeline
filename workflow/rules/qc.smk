@@ -23,6 +23,10 @@ rule fc_lane:
     envmodules: 'python/2.7'
     container: config['images']['python']
     shell: """
+    if [ ! -d "$(dirname {output.txt})" ]; then 
+        mkdir -p "$(dirname {output.txt})"
+    fi
+    
     python {params.get_flowcell_lanes} \\
         {input.r1} \\
         {wildcards.samples} > {output.txt}
@@ -372,7 +376,8 @@ rule snpeff:
     params: 
         rname  = "snpeff",
         genome = config['references']['SNPEFF_GENOME'],
-        config = config['references']['SNPEFF_CONFIG']
+        config = config['references']['SNPEFF_CONFIG'],
+        bundle = config['references']['SNPEFF_BUNDLE'],
     envmodules: 'snpEff/4.3t'
     container: config['images']['wes_base']
     shell: """

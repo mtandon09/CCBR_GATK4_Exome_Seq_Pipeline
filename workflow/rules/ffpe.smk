@@ -174,11 +174,18 @@ rule ffpefilter_mafs:
         tumorsample = '{samples}',
         genome = config['references']['MAF_GENOME'],
         filtervcf = config['references']['MAF_FILTERVCF'],
-        rname = 'pl:vcf2maf',
+        rname = 'vcf2maf',
         vcf2maf_script = VCF2MAF_WRAPPER
+    threads: 4
     shell: """
     echo "Converting to MAF..."
-    bash {params.vcf2maf_script} --vcf {input.filtered_vcf} --maf {output.maf} --tid {params.tumorsample} --genome {params.genome} --threads "$((SLURM_CPUS_PER_TASK-1))" --info "set"
+    bash {params.vcf2maf_script} \\
+        --vcf {input.filtered_vcf} \\
+        --maf {output.maf} \\
+        --tid {params.tumorsample} \\
+        --genome {params.genome} \\
+        --threads {threads} \\
+        --info "set"
     echo "Done converting to MAF..."
     """
 

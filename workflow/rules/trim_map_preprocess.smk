@@ -1,4 +1,4 @@
-
+# Rules for primary processing of raw data: trim, align, and recal
 rule bam2fastq:
     """
     Convert BAM files to paired FASTQ.
@@ -56,12 +56,11 @@ rule trimmomatic:
         one = temp(os.path.join(output_fqdir, "{samples}.R1.trimmed.fastq.gz")),
         two = temp(os.path.join(output_fqdir, "{samples}.R1.trimmed.unpair.fastq.gz")),
         three = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.fastq.gz")),
-        four = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.unpair.fastq.gz")),
-        err = os.path.join(output_fqdir, "{samples}_run_trimmomatic.err")
+        four = temp(os.path.join(output_fqdir, "{samples}.R2.trimmed.unpair.fastq.gz"))
     params:
         adapterfile = config['references']['trimmomatic.adapters'],
         ver = config['tools']['trimmomatic']['version'],
-        rname = "pl:trimmomatic"
+        rname = 'trimmomatic'
     envmodules: 
         'trimmomatic/0.39'
     container:
@@ -79,7 +78,7 @@ rule trimmomatic:
         LEADING:10 \\
         TRAILING:10 \\
         SLIDINGWINDOW:4:20 \\
-        MINLEN:20 2> {output.err}     
+        MINLEN:20      
     """
 
 
@@ -101,7 +100,7 @@ rule bwa_mem:
         sample = "{samples}",
         ver_samtools = config['tools']['samtools']['version'],
         ver_bwa = config['tools']['bwa']['version'],
-        rname = "pl:bwamem"
+        rname = 'bwamem'
     envmodules: 
         'samtools/1.12'
         'bwa/0.7.17'
@@ -138,7 +137,7 @@ rule raw_index:
         bai = temp(os.path.join(output_bamdir,"preprocessing","{samples}.raw_map.bai")),
     params:
         ver_samtools = config['tools']['samtools']['version'],
-        rname = "raw_index"
+        rname = 'raw_index'
     envmodules: 
         'samtools/1.12'
     container: 
@@ -173,7 +172,7 @@ rule gatk_recal:
         ver_gatk = config['tools']['gatk4']['version'],
         chrom = chroms,
         intervals = intervals_file,
-        rname = "recal"
+        rname = 'recal'
     envmodules:
         'GATK/4.2.0.0'
     container:
@@ -217,7 +216,7 @@ rule bam_check:
     params:
         ver_samtools = config['tools']['samtools']['version'],
         ver_gatk = config['tools']['gatk4']['version'],
-        rname = "bam_check"
+        rname = 'bam_check'
     envmodules:
         'samtools/1.12',
         'GATK/4.2.0.0'

@@ -19,6 +19,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
 RUN apt-get update \
  && apt-get -y upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      bc \      
       build-essential \
       bzip2 \
       cmake \
@@ -149,7 +150,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD5
     && apt-get -y install libcurl4-openssl-dev libssl-dev libboost-dev libxml2-dev
 RUN Rscript -e 'install.packages(c("argparse", "knitr", "tidyverse", "dplyr", "plyr", "plotly", "ggplot2", "RColorBrewer", "htmlwidgets"), repos="http://cran.r-project.org")'
 RUN Rscript -e 'install.packages(c("shiny", "gridExtra", "flexdashboard", "rmarkdown", "crosstalk", "DT", "reshape2", "circlize", "viridis"), repos="http://cran.r-project.org")'
-RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "ComplexHeatmap"))'
+RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "ComplexHeatmap", "rtracklayer"))'
 
 # Install Control-FREEC/v11.6 and additional dependencies
 # Requires R, samtools, bedtools, sambamba (already satisfied)
@@ -228,12 +229,19 @@ ENV PATH="/opt2/VarDict-1.8.2/bin:$PATH"
 
 # Add Dockerfile and argparse.bash script
 # and export environment variables
+# and creating a backwards compatible
+# wrapper for Biowulf's trimmomatic/0.39
 # and set java8 as default with links
 # to alternative versions
 ADD Dockerfile /opt2/base_gatk4_wes.dockerfile
 COPY argparse.bash /opt2
+# Trimmomatic requires java11
+ENV TRIMMOMATIC_JAR="/usr/share/java/trimmomatic-0.39.jar"
+RUN echo '#!/bin/bash' > /opt2/trimmomatic \
+    && echo 'java11 -jar "$TRIMMOMATIC_JAR" "$@"' >> /opt2/trimmomatic \
+    && chmod +x /opt2/trimmomatic
 RUN chmod -R a+rX /opt2 \
-    && chmod -R a+x /opt2/argparse.bash \
+    && chmod a+x /opt2/argparse.bash \
     && ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java /usr/bin/java11 \
     && ln -s /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java8 \
     && ln -fs /usr/lib/jvm/java-8-openjdk-amd64/bin/java /usr/bin/java
@@ -243,5 +251,12 @@ ENV TRIMMOJAR="/usr/share/java/trimmomatic-0.39.jar"
 WORKDIR /data2
 
 # Clean-up step to reduce size
-RUN apt-get clean && apt-get purge && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# and install GNU awk to calculate mean and standard 
+# deviation, ensures backward compatibility with 
+# biowulf installation of awk is a pointer to gawk,
+# and install pandoc (>= 1.12.3 required for Rmarkdown)    
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    gawk \
+    pandoc \
+    && apt-get clean && apt-get purge \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

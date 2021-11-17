@@ -6,6 +6,7 @@
 		"trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
 		"SNPEFF_GENOME": "GRCh38.86",
 		"SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
+		"SNPEFF_BUNDLE": "/fdb/snpEff/4.3t/",
 		"GENOME": "/data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta",
 		"GENOMEDICT": "/data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.dict",
 		"DBSNP": "/fdb/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz",
