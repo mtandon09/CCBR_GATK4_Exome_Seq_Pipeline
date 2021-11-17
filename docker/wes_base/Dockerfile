@@ -251,5 +251,8 @@ ENV TRIMMOJAR="/usr/share/java/trimmomatic-0.39.jar"
 WORKDIR /data2
 
 # Clean-up step to reduce size
-RUN apt-get clean && apt-get purge && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Install GNU awk to calculate mean and standard deviation
+# Biowulf installation of awk is a pointer to gawk
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y gawk \
+    && apt-get clean && apt-get purge \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
