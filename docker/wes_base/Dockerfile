@@ -19,6 +19,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
 RUN apt-get update \
  && apt-get -y upgrade \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      bc \      
       build-essential \
       bzip2 \
       cmake \
@@ -149,7 +150,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD5
     && apt-get -y install libcurl4-openssl-dev libssl-dev libboost-dev libxml2-dev
 RUN Rscript -e 'install.packages(c("argparse", "knitr", "tidyverse", "dplyr", "plyr", "plotly", "ggplot2", "RColorBrewer", "htmlwidgets"), repos="http://cran.r-project.org")'
 RUN Rscript -e 'install.packages(c("shiny", "gridExtra", "flexdashboard", "rmarkdown", "crosstalk", "DT", "reshape2", "circlize", "viridis"), repos="http://cran.r-project.org")'
-RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "ComplexHeatmap"))'
+RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "ComplexHeatmap", "rtracklayer"))'
 
 # Install Control-FREEC/v11.6 and additional dependencies
 # Requires R, samtools, bedtools, sambamba (already satisfied)
