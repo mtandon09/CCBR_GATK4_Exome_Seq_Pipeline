@@ -376,7 +376,8 @@ rule snpeff:
     params: 
         rname  = "snpeff",
         genome = config['references']['SNPEFF_GENOME'],
-        config = config['references']['SNPEFF_CONFIG']
+        config = config['references']['SNPEFF_CONFIG'],
+        bundle = config['references']['SNPEFF_BUNDLE'],
     envmodules: 'snpEff/4.3t'
     container: config['images']['wes_base']
     shell: """
