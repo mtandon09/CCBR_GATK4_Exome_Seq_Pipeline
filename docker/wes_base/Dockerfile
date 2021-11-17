@@ -251,8 +251,12 @@ ENV TRIMMOJAR="/usr/share/java/trimmomatic-0.39.jar"
 WORKDIR /data2
 
 # Clean-up step to reduce size
-# Install GNU awk to calculate mean and standard deviation
-# Biowulf installation of awk is a pointer to gawk
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y gawk \
+# and install GNU awk to calculate mean and standard 
+# deviation, ensures backward compatibility with 
+# biowulf installation of awk is a pointer to gawk,
+# and install pandoc (>= 1.12.3 required for Rmarkdown)    
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    gawk \
+    pandoc \
     && apt-get clean && apt-get purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
