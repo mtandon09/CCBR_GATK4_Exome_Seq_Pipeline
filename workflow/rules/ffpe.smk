@@ -32,12 +32,30 @@ rule sobdetect_pass1:
         mkdir -p "$(dirname {output.pass1_vcf})"
     fi
 
+    echo "Running SOBDetector..."
+    # Try/catch for running SOB Dectetor
+    # with an empty input VCF file 
     java -jar {input.SOBDetector_jar} \\
         --input-type VCF \\
         --input-variants "{input.vcf}" \\
         --input-bam {input.bam} \\
         --output-variants {output.pass1_vcf} \\
-        --only-passed false
+        --only-passed false || {{
+    # Compare length of VCF header to 
+    # the total length of the file
+    header_length=$(grep '^#' "{input.vcf}" | wc -l)
+    file_length=$(cat "{input.vcf}" | wc -l)
+    if [ $header_length -eq $file_length ]; then
+        # VCF file only contains header
+        # File contains no variants, catch
+        # problem so pipeline can continue
+        cat "{input.vcf}" > {output.pass1_vcf}
+    else
+        # SOB Dectector failed for another reason
+        echo "SOB Detector Failed... exiting now!" 1>&2
+        exit 1
+    fi
+    }}
 
     bcftools query \\
         -f '%INFO/numF1R2Alt\\t%INFO/numF2R1Alt\\t%INFO/numF1R2Ref\\t%INFO/numF2R1Ref\\t%INFO/numF1R2Other\\t%INFO/numF2R1Other\\t%INFO/SOB\\n' \\
@@ -57,12 +75,21 @@ rule sobdetect_cohort_params:
     container:
        config['images']['wes_base'] 
     shell: """
-      echo -e "#TUMOR.alt\\tTUMOR.depth\\tTUMOR.AF\\tSOB\\tFS\\tSOR\\tTLOD\\tReadPosRankSum" > {output.all_info_file}
-      cat {input.info_files} >> {output.all_info_file}
+    echo -e "#TUMOR.alt\\tTUMOR.depth\\tTUMOR.AF\\tSOB\\tFS\\tSOR\\tTLOD\\tReadPosRankSum" > {output.all_info_file}
+    cat {input.info_files} >> {output.all_info_file}
     
-      # Calculate mean and standard deviation
-      grep -v '^#' {output.all_info_file} \\
+    # Try/catch for running calculating
+    # mean and standard deviation with 
+    # with a set of empty input VCF files
+    all_length=$(tail -n+2 {output.all_info_file} | wc -l)
+    if [ $all_length -eq 0 ]; then 
+        echo 'WARNING: All SOB Dectect pass1 samples contained no variants.' \\
+        | tee {output.params_file}
+    else
+        # Calculate mean and standard deviation
+        grep -v '^#' {output.all_info_file} \\
         | awk '{{ total1 += $1; ss1 += $1^2; total2 += $2; ss2 += $2^2; total3 += $3; ss3 += $3^2; total4 += $4; ss4 += $4^2 }} END {{ print total1/NR,total2/NR,total3/NR,total4/NR; print sqrt(ss1/NR-(total1/NR)^2),sqrt(ss2/NR-(total2/NR)^2),sqrt(ss3/NR-(total3/NR)^3),sqrt(ss4/NR-(total4/NR)^2) }}' > {output.params_file}
+    fi
     """
 
   
@@ -92,13 +119,32 @@ rule sobdetect_pass2:
     fi
 
     echo "Running SOBDetector..."
+    # Try/catch for running SOB Dectetor
+    # with an empty input VCF file
+    bcf_annotate_option="-e 'INFO/pArtifact < 0.05' "
     java -jar {input.SOBDetector_jar} \\
         --input-type VCF \\
         --input-variants "{input.vcf}" \\
         --input-bam "{input.bam}" \\
         --output-variants "{output.pass2_vcf}" \\
         --only-passed true \\
-        --standardization-parameters "{input.params_file}"
+        --standardization-parameters "{input.params_file}" || {{
+    # Compare length of VCF header to 
+    # the total length of the file
+    header_length=$(grep '^#' "{input.vcf}" | wc -l)
+    file_length=$(cat "{input.vcf}" | wc -l)
+    if [ $header_length -eq $file_length ]; then
+        # VCF file only contains header
+        # File contains no variants, catch
+        # problem so pipeline can continue
+        cat "{input.vcf}" > {output.pass2_vcf}
+        bcf_annotate_option=""
+    else
+        # SOB Dectector failed for another reason
+        echo "SOB Detector Failed... exiting now!" 1>&2
+        exit 1
+    fi
+    }}
     
     echo "Making info table..."
     bcftools query \\
@@ -116,12 +162,12 @@ rule sobdetect_pass2:
         bcftools annotate \\
             -a "{input.vcf}.gz" \\
             -c "INFO/set" \\
-            -e 'INFO/pArtifact < 0.05' \\
+            $bcf_annotate_option \\
             -Oz \\
             -o {output.filtered_vcf} {output.pass2_vcf}.gz
     else
         bcftools filter \\
-            -e 'INFO/pArtifact < 0.05' \\
+            $bcf_annotate_option \\
             -Oz \\
             -o {output.filtered_vcf} {output.pass2_vcf}
         bcftools index -f -t {output.filtered_vcf}
@@ -144,6 +190,7 @@ rule sobdetect_metrics:
     container:
         config['images']['wes_base'] 
     shell: """
+    set -x
     echo -e "#ID\\tDefaultParam\\tCohortParam\\tTotalVariants" > {output.count_table}
     echo -e "#SAMPLE_ID\\tParam\\tCHROM\\tPOS\\tnumF1R2Alt\\tnumF2R1Alt\\tnumF1R2Ref\\tnumF2R1Ref\\tnumF1R2Other\\tnumF2R1Other\\tSOB\\tpArtifact\\tFS\\tSOR\\tTLOD\\tReadPosRankSum" > {output.full_metric_table}
     
@@ -152,8 +199,9 @@ rule sobdetect_metrics:
     for (( i=0; i<${{#P1FILES[@]}}; i++ )); do
         MYID=$(basename -s ".sobdetect.vcf" ${{P1FILES[$i]}})
         echo "Collecting metrics from $MYID..."
-      
-        total_count=$(grep -v ^# ${{P1FILES[$i]}} | wc -l)
+
+        # grep may fail if input files do not contain any variants 
+        total_count=$(grep -v ^# ${{P1FILES[$i]}} | wc -l) || total_count=0
         count_1p=$(bcftools query -f '%INFO/pArtifact\n' ${{P1FILES[$i]}} | awk '{{if ($1 != "." && $1 < 0.05){{print}}}}' | wc -l)
         count_2p=$(bcftools query -f '%INFO/pArtifact\n' ${{P2FILES[$i]}} | awk '{{if ($1 != "." && $1 < 0.05){{print}}}}' | wc -l)
      
