@@ -5,7 +5,9 @@
 ## (1) Add a 'chr' prefix to chromosome names if genome is hg19
 ## (2) Remove repeated regions with the same start site (the first one is kept)
 
+from __future__ import print_function
 import argparse
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i","--input_bed", help="Input BED file to be reformatted")
@@ -30,7 +32,7 @@ with open(infile, 'r') as inputFile:
             if not line.startswith("#"):
                 curr_cols=line.strip().split("\t")
                 if (len(curr_cols) < 3):
-                    Sys.exit("Targets BED file must contain at least three columns: chr, start, end")
+                    sys.exit("Targets BED file must contain at least three columns: chr, start, end")
                 
                 
                 if (len(curr_cols) < 4):
