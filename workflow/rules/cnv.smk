@@ -43,15 +43,15 @@ rule freec_exome_somatic_pass1:
 
     cat "{params.sig_script}" | \\
         R --slave \\
-        --args $myoutdir/{params.tumorsample}.recal.bam_CNVs \\
-        $myoutdir/{params.tumorsample}.recal.bam_ratio.txt
+        --args $myoutdir/{params.tumorsample}.bam_CNVs \\
+        $myoutdir/{params.tumorsample}.bam_ratio.txt
 
-    mv $myoutdir/{params.tumorsample}.recal.bam_CNVs.p.value.txt {output.cnvs}
+    mv $myoutdir/{params.tumorsample}.bam_CNVs.p.value.txt {output.cnvs}
     cat "{params.plot_script}" | \\
         R --slave \\
         --args 2 \\
-        $myoutdir/{params.tumorsample}.recal.bam_ratio.txt \\
-        $myoutdir/{params.tumorsample}.recal.bam_BAF.txt
+        $myoutdir/{params.tumorsample}.bam_ratio.txt \\
+        $myoutdir/{params.tumorsample}.bam_BAF.txt
     """
 
 
@@ -66,7 +66,7 @@ rule sequenza:
         gc = config['references']['SEQUENZAGC'],
         run_script = config['scripts']['run_sequenza'],
         rname = 'sequenza'
-    threads: 8
+    threads: 4
     envmodules:
         'sequenza-utils/2.2.0',
         'samtools/1.9',
@@ -76,9 +76,9 @@ rule sequenza:
     myoutdir="$(dirname {output.fit})/{params.tumorsample}"
     if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
 
-    gzip -c "$(dirname {input.freeccnvs})/{params.tumorsample}/{params.normalsample}.recal.bam_minipileup.pileup" \\
+    gzip -c "$(dirname {input.freeccnvs})/{params.tumorsample}/{params.normalsample}.bam_minipileup.pileup" \\
         > "$myoutdir/{params.normalsample}.recal.bam_minipileup.pileup.gz"
-    gzip -c "$(dirname {input.freeccnvs})/{params.tumorsample}/{params.tumorsample}.recal.bam_minipileup.pileup" \\
+    gzip -c "$(dirname {input.freeccnvs})/{params.tumorsample}/{params.tumorsample}.bam_minipileup.pileup" \\
         > "$myoutdir/{params.tumorsample}.recal.bam_minipileup.pileup.gz"
     
     sequenza-utils bam2seqz \\
@@ -91,15 +91,17 @@ rule sequenza:
     sequenza-utils seqz_binning \\
         -w 100 \\
         -s "$myoutdir/{params.tumorsample}.seqz.gz" \\
+        | tee "$myoutdir/{params.tumorsample}.bin100.seqz" \\
         | gzip > "$myoutdir/{params.tumorsample}.bin100.seqz.gz"
 
     Rscript "{params.run_script}" \\
-        "$myoutdir/{params.tumorsample}.bin100.seqz.gz" \\
+        "$myoutdir/{params.tumorsample}.bin100.seqz" \\
         "$myoutdir" \\
         "{params.normalsample}+{params.tumorsample}" \\
-        $((SLURM_CPUS_PER_TASK-1))
+        {threads}
 
     mv "$myoutdir/{params.normalsample}+{params.tumorsample}_alternative_solutions.txt" "{output.fit}"
+    rm "$myoutdir/{params.tumorsample}.bin100.seqz"
     """
 
 
@@ -133,7 +135,7 @@ rule freec_exome_somatic_pass2:
     myoutdir="$(dirname {output.cnvs})/{params.tumorsample}"
     if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
 
-    perl /data/CCBR_Pipeliner/4.0.2/Pipeliner/Results-template/Scripts/make_freec_pass2_exome_tn_config.pl \\
+    perl {params.config_script} \\
         "$myoutdir" \\
         {params.lengths} \\
         {params.chroms} \\
@@ -149,13 +151,13 @@ rule freec_exome_somatic_pass2:
 
     cat "{params.sig_script}" | \\
         R --slave \\
-        --args $myoutdir/{params.tumorsample}.recal.bam_CNVs \\
-        $myoutdir/{params.tumorsample}.recal.bam_ratio.txt
+        --args $myoutdir/{params.tumorsample}.bam_CNVs \\
+        $myoutdir/{params.tumorsample}.bam_ratio.txt
    
-    mv $myoutdir/{params.tumorsample}.recal.bam_CNVs.p.value.txt {output.cnvs}
+    mv $myoutdir/{params.tumorsample}.bam_CNVs.p.value.txt {output.cnvs}
     cat "{params.plot_script}" | \\
         R --slave \\
         --args 2 \\
-        $myoutdir/{params.tumorsample}.recal.bam_ratio.txt \\
-        $myoutdir/{params.tumorsample}.recal.bam_BAF.txt
+        $myoutdir/{params.tumorsample}.bam_ratio.txt \\
+        $myoutdir/{params.tumorsample}.bam_BAF.txt
     """
