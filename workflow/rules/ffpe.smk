@@ -1,4 +1,4 @@
-
+# Rules for correcting stand orientation bias in FFPE samples
 rule sobdetect_get:
     input: 
     output: 
@@ -190,7 +190,6 @@ rule sobdetect_metrics:
     container:
         config['images']['wes_base'] 
     shell: """
-    set -x
     echo -e "#ID\\tDefaultParam\\tCohortParam\\tTotalVariants" > {output.count_table}
     echo -e "#SAMPLE_ID\\tParam\\tCHROM\\tPOS\\tnumF1R2Alt\\tnumF2R1Alt\\tnumF1R2Ref\\tnumF2R1Ref\\tnumF1R2Other\\tnumF2R1Other\\tSOB\\tpArtifact\\tFS\\tSOR\\tTLOD\\tReadPosRankSum" > {output.full_metric_table}
     
@@ -225,6 +224,8 @@ rule ffpefilter_mafs:
         rname = 'vcf2maf',
         vcf2maf_script = VCF2MAF_WRAPPER
     threads: 4
+    container:
+        config['images']['vcf2maf'] 
     shell: """
     echo "Converting to MAF..."
     bash {params.vcf2maf_script} \\
