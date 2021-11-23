@@ -36,7 +36,7 @@
         "fastqc_adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/fastqc.adapters",
         "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
         "KRAKENBACDB": "/fdb/kraken/20180907_standard_kraken2",
-        "trimmomatic.adapters": "/data/CCBR_Pipeliner/db/PipeDB/dev/adapters2.fa",
+        "trimmomatic.adapters": "resources/adapters.fa",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/usr/local/apps/snpEff/4.3t/snpEff.config",
         "GENOME": "/data/tandonm/pl_test_data/human/genome/hg38/Homo_sapiens_assembly38.fasta",
@@ -65,20 +65,20 @@
         "MAF_FILTERVCF": "/data/CCBR_Pipeliner/db/PipeDB/lib/ExAC_nonTCGA.r0.3.1.sites.vep.GRCh38.vcf.gz",
         "MAF_GENOME": "hg38",
         "VCF2MAF": {
-            "CONTAINER": "/data/CCBR_Pipeliner/db/PipeDB/db/SingularityImages/ccbr_vcf2maf_v0.1.0.sif",
+            "LEGACY_CONTAINER": "/data/CCBR_Pipeliner/db/PipeDB/db/SingularityImages/ccbr_vcf2maf_v0.1.0.sif",
             "VEPRESOURCEBUNDLEPATH": "/data/CCBR_Pipeliner/db/PipeDB/lib/vcf2maf_resources",
             "NCBI_BUILD": "GRCh38",
             "SPECIES": "homo_sapiens"
         },
         "SOMALIER":{
-            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/somalier/somalier.simg",
+            "LEGACY_CONTAINER": "/data/tandonm/pl_test_data/human/resources/somalier/somalier.simg",
             "ANCESTRY_DB": "/data/tandonm/pl_test_data/human/resources/somalier/1kg-somalier",
             "SITES_VCF": "/data/tandonm/pl_test_data/human/resources/somalier/sites.hg38.vcf.gz",
             "NCBI_BUILD": "GRCh38",
             "SPECIES": "homo_sapiens"
         },
         "VERIFYBAMID":{
-            "CONTAINER": "/data/tandonm/pl_test_data/human/resources/verifybamid/verifybamid2_latest.sif",
+            "LEGACY_CONTAINER": "/data/tandonm/pl_test_data/human/resources/verifybamid/verifybamid2_latest.sif",
             "RESOURCE": "/data/tandonm/pl_test_data/human/resources/verifybamid/resource/",
             "NCBI_BUILD": "GRCh38",
             "SPECIES": "homo_sapiens"
