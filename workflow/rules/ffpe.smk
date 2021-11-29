@@ -162,12 +162,12 @@ rule sobdetect_pass2:
         bcftools annotate \\
             -a "{input.vcf}.gz" \\
             -c "INFO/set" \\
-            $bcf_annotate_option \\
+            "$bcf_annotate_option" \\
             -Oz \\
             -o {output.filtered_vcf} {output.pass2_vcf}.gz
     else
         bcftools filter \\
-            $bcf_annotate_option \\
+            "$bcf_annotate_option" \\
             -Oz \\
             -o {output.filtered_vcf} {output.pass2_vcf}
         bcftools index -f -t {output.filtered_vcf}
