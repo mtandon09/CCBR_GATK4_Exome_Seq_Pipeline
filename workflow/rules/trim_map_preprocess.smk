@@ -65,11 +65,12 @@ rule trimmomatic:
         'trimmomatic/0.39'
     container:
         config['images']['wes_base']
+    threads: 24
     shell: """
     myoutdir="$(dirname {output.one})"
     if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
     trimmomatic PE \\
-        -threads $((SLURM_CPUS_PER_TASK-1)) \\
+        -threads {threads} \\
         -phred33 \\
         {input.r1} {input.r2} \\
         {output.one} {output.two} \\
@@ -107,12 +108,13 @@ rule bwa_mem:
         'samblaster/0.1.25'
     container:
         config['images']['wes_base'] 
+    threads: 24
     shell: """
     myoutdir="$(dirname {output})"
     if [ ! -d "$myoutdir" ]; then mkdir -p "$myoutdir"; fi
     bwa mem -M \\
         -R \'@RG\\tID:{params.sample}\\tSM:{params.sample}\\tPL:illumina\\tLB:{params.sample}\\tPU:{params.sample}\\tCN:hgsc\\tDS:wes\' \\
-        -t $((SLURM_CPUS_PER_TASK-1)) \\
+        -t {threads} \\
         {params.genome} \\
         {input} | \\
     samblaster -M | \\

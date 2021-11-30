@@ -141,7 +141,7 @@ rule strelka:
         --runDir="$myoutdir" \\
         --exome
     cd "$myoutdir"
-    ./runWorkflow.py -m local -j $((SLURM_CPUS_PER_TASK-1))
+    ./runWorkflow.py -m local -j {threads}
 
     java -Xmx12g -Djava.io.tmpdir={params.tmpdir} -XX:ParallelGCThreads={threads} \\
         -jar $GATK_JAR -T CombineVariants \\
