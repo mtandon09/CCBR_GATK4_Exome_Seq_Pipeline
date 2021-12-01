@@ -13,7 +13,7 @@ python3 -m venv .venv
 # Update pip
 pip install --upgrade pip
 # Download Dependencies
-pip install -r requirements.txt
+pip install -r docs/requirements.txt
 ```
 
 ### Preview while editing  
