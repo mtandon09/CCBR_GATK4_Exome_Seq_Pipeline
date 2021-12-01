@@ -4,7 +4,7 @@
 
 ---
 ## Overview
-Welcome to exome-seek's home! Before getting started, we highly recommend reading through [exome-seek's documentation](https://mtandon09.github.io/CCBR_GATK4_Exome_Seq_Pipeline).
+Welcome to exome-seek! Before getting started, we highly recommend reading through [exome-seek's documentation](https://mtandon09.github.io/CCBR_GATK4_Exome_Seq_Pipeline).
 
 The **`./exome-seek`** pipeline is composed several inter-related sub commands to setup and run the pipeline across different systems. Each of the available sub commands perform different functions: 
 

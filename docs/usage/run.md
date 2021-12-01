@@ -217,6 +217,7 @@ module load singularity snakemake
 ./exome-seek run --input .tests/*.R?.fastq.gz \
                  --output /data/$USER/WES_hg38 \
                  --genome hg38 \
+                 --targets Agilent_SSv7_allExons_hg38.bed \
                  --mode slurm \
                  --dry-run
 
@@ -226,6 +227,7 @@ module load singularity snakemake
 ./exome-seek run --input .tests/*.R?.fastq.gz \
                  --output /data/$USER/WES_hg38 \
                  --genome hg38 \
+                 --targets Agilent_SSv7_allExons_hg38.bed \
                  --mode slurm
 
 ```
