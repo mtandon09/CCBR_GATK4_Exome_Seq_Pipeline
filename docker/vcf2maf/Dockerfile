@@ -75,6 +75,12 @@ RUN wget https://github.com/samtools/bcftools/releases/download/1.10/bcftools-1.
         && make \
         && cd /opt2
 
+# Install vcf2maf/v1.6.17
+RUN wget https://github.com/mskcc/vcf2maf/archive/refs/tags/v1.6.17.tar.gz \
+        && tar -xvf v1.6.17.tar.gz \
+        && rm v1.6.17.tar.gz \
+        && chmod a+rx /opt2/vcf2maf-1.6.17/*.pl
+
 # Add Dockerfile and argparse.bash script
 # and export environment variables
 # and ensure proper permissions
@@ -83,7 +89,7 @@ COPY argparse.bash /opt2
 RUN chmod -R a+rX /opt2 \
     && chmod a+x /opt2/argparse.bash \
     && ln -sf /usr/bin/python3 /usr/bin/python
-ENV PATH="$PATH:/opt2/bcftools-1.10:/opt2/samtools-1.10:/opt2/htslib-1.10:/opt2"
+ENV PATH="$PATH:/opt2/bcftools-1.10:/opt2/samtools-1.10:/opt2/htslib-1.10:/opt2:/opt2/vcf2maf-1.6.17"
 
 # Reset working directory
 WORKDIR /data2
