@@ -221,6 +221,7 @@ rule ffpefilter_mafs:
         tumorsample = '{samples}',
         genome = config['references']['MAF_GENOME'],
         filtervcf = config['references']['MAF_FILTERVCF'],
+        bundle = config['references']['VCF2MAF']['VEPRESOURCEBUNDLEPATH'],
         rname = 'vcf2maf',
         vcf2maf_script = VCF2MAF_WRAPPER
     threads: 4
@@ -234,6 +235,7 @@ rule ffpefilter_mafs:
         --tid {params.tumorsample} \\
         --genome {params.genome} \\
         --threads {threads} \\
+        --vepresourcebundlepath {params.bundle} \\
         --info "set"
     echo "Done converting to MAF..."
     """
