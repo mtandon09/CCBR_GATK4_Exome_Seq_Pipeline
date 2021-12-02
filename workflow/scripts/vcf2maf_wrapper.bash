@@ -3,9 +3,6 @@ set -e -o pipefail
 
 # Source argparse bash wrapper for more
 # advanced argument parsing in bash
-. /opt2/conda/etc/profile.d/conda.sh && \
-  conda activate python2
-
 source /opt2/argparse.bash \
         || exit 1
 
