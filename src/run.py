@@ -664,7 +664,7 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
         # replacing Popen subprocess with a direct
         # snakemake API call: https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
         masterjob = subprocess.Popen([
-                'snakemake', '-pr',
+                'snakemake', '-pr', '--rerun-incomplete',
                 '--use-singularity',
                 '--singularity-args', "'-B {}'".format(bindpaths),
                 '--cores', str(threads),
