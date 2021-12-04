@@ -458,7 +458,7 @@ rule somalier_analysis:
         -o "$(dirname {output.relatedness})/ancestry" \\
         --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
         {params.ancestry_db}/*.somalier ++ \\
-        {input.somalier}
+        {input.somalier} || touch {output.ancestry}
 
     Rscript {params.script_path_gender} \\
         {output.relatednessSamples} \\
@@ -468,12 +468,20 @@ rule somalier_analysis:
         {output.relatedness} \\
         {output.finalFilePairs}
     
-    Rscript {params.script_path_pca} \\
-        {output.ancestry} \\
-        {output.finalFilePairs} \\
-        {output.ancestoryPlot} \\
-        {output.pairAncestoryHist}
+    ## Only run this is ancestry is non-empty
+    if [ -s {output.ancestry} ]; then
+        Rscript {params.script_path_pca} \\
+            {output.ancestry} \\
+            {output.finalFilePairs} \\
+            {output.ancestoryPlot} \\
+            {output.pairAncestoryHist}
+    else
+        touch {output.finalFilePairs}
+        touch {output.ancestoryPlot}
+        touch {output.pairAncestoryHist}
+    fi
     """
+    
 
 
 rule multiqc:
