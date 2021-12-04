@@ -390,7 +390,7 @@ rule varscan_paired:
     threads: 4
     envmodules:
         'VarScan/2.4.3',
-        'GATK/3.8-1'
+        'bcftools/1.9'
     container:
         config['images']['wes_base']
     shell: """
@@ -402,15 +402,19 @@ rule varscan_paired:
     dual_pileup="samtools mpileup -d 10000 -q 15 -Q 15 -f {params.genome} {input.normal} {input.tumor}"
     varscan_cmd="varscan somatic <($dual_pileup) {output.vcf} $varscan_opts --mpileup 1"    
     eval "$varscan_cmd"
-
-    java -Xmx12g -Djava.io.tmpdir={params.tmpdir} -XX:ParallelGCThreads={threads} \\
-        -jar $GATK_JAR -T CombineVariants \\
-        -R {params.genome} \\
-        --variant {output.vcf}.snp \\
-        --variant {output.vcf}.indel \\
-        --assumeIdenticalSamples \\
-        --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
-        -o {output.vcf}     
+    
+    # Create a vanilla empty VCF if no variants found
+    if [ ! -s {output.vcf}.snp ]; then
+        echo -e "##fileformat=VCFv4.1\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1" {output.vcf}.snp
+    fi
+    if [ ! -s {output.vcf}.indel ]; then
+        echo -e "##fileformat=VCFv4.1\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1" {output.vcf}.indel
+    fi
+    bgzip {output.vcf}.snp
+    bcftools index -f {output.vcf}.snp.gz
+    bgzip {output.vcf}.indel
+    bcftools index -f {output.vcf}.indel.gz
+    bcftools concat {output.vcf}.snp.gz {output.vcf}.indel.gz | bcftools sort -T /lscratch/$SLURM_JOB_ID -O v -o {output.vcf}
     """
 
 

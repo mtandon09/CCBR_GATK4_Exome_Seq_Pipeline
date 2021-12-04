@@ -255,7 +255,7 @@ rule varscan_single:
     threads: 4
     envmodules:
         'VarScan/2.4.3',
-        'GATK/3.8-1'
+        'bcftools/1.9'
     container:
         config['images']['wes_base']
     shell: """
@@ -267,6 +267,11 @@ rule varscan_single:
     pileup_cmd="samtools mpileup -d 100000 -q 15 -Q 15 -f {params.genome} {input.tumor}"
     varscan_cmd="varscan mpileup2cns <($pileup_cmd) $varscan_opts"
     eval "$varscan_cmd > {output.vcf}.gz"
+    
+    # Create a vanilla empty VCF if no variants found
+    if [ ! -s {output.vcf}.gz ]; then
+        echo -e "##fileformat=VCFv4.1\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample1" | bgzip -c > {output.vcf}.gz
+    fi
     eval "bcftools view -U {output.vcf}.gz > {output.vcf}"
     """
 
