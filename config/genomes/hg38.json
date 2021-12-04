@@ -40,6 +40,16 @@
 			"SITES_VCF": "/data/CCBR_Pipeliner/Exome-seek/hg38/somalier/sites.hg38.vcf.gz",
 			"NCBI_BUILD": "GRCh38",
 			"SPECIES": "homo_sapiens"
-		}
+		},
+        "VQSR":{
+            "SNP":{
+                "MAX_GAUSSIANS": "6",
+                "TRUTH_SENSITIVITY": "0.97"    
+            },
+            "INDEL":{
+                "MAX_GAUSSIANS": "4",
+                "TRUTH_SENSITIVITY": "0.97"    
+            }
+        }
 	}
 }
