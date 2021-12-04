@@ -151,17 +151,193 @@ rule germline_merge_chrom:
         """
 
 
-rule Gatk_SelectVariants:
+rule vqsr_snp:
     """
-    Make individual VCFs with variant sites in that sample
+    Variant Quality Score Recalibration (VQSR) for SNPs
     @Input:
-        Multi-sample gVCF with all chromosomes combined
+        Multi-sample gVCF
     @Output:
-        Single-sample VCF with unfiltered germline variants
+        Calculated info for applying SNP recalibration
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz")
+    output:
+        recal = os.path.join(output_germline_base,"vqsr","SNP.output.AS.recal"),
+        tranches = os.path.join(output_germline_base,"vqsr","SNP.output.AS.tranches"),
+        rscript = os.path.join(output_germline_base,"vqsr","SNP.output.plots.AS.R")
+    params: 
+        rname = "vqsr_snp",
+        genome=config['references']['GENOME'],
+        dbsnp=config['references']['DBSNP'],
+        onekg=config['references']['1000GSNP'],
+        hapmap=config['references']['HAPMAP'],
+        omni=config['references']['OMNI'],
+        gaussians = config['references']['VQSR']['SNP']['MAX_GAUSSIANS']
+    message: "Running GATK4 VQSR for germline SNPs"
+    envmodules: 'GATK/4.2.0.0'
+    container: config['images']['wes_base'] 
+    shell:
+        """
+        gatk --java-options '-Xmx24g' VariantRecalibrator \\
+            -V {input.vcf} \\
+            -O {output.recal} --tranches-file {output.tranches} --rscript-file {output.rscript} \\
+            -mode SNP --trust-all-polymorphic \\
+            -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.5 -tranche 99.4 -tranche 99.3 -tranche 99.0 -tranche 98.0 -tranche 97.0 -tranche 90.0 \\
+            --max-gaussians {params.gaussians} --reference {params.genome} --use-jdk-inflater --use-jdk-deflater -AS \\
+            --resource:hapmap,known=false,training=true,truth=true,prior=15.0 {params.hapmap} \\
+            --resource:omni,known=false,training=true,truth=false,prior=12.0 {params.omni} \\
+            --resource:1000G,known=false,training=true,truth=false,prior=10.0 {params.onekg} \\
+            --resource:dbsnp,known=true,training=false,truth=false,prior=2.0 {params.dbsnp} \\
+            -an QD -an DP -an MQ -an MQRankSum -an ReadPosRankSum -an FS -an SOR 
+        """
+
+rule vqsr_indel:
+    """
+    Variant Quality Score Recalibration (VQSR) for INDELs
+    @Input:
+        Multi-sample gVCF
+    @Output:
+        Calculated info for applying INDEL recalibration
     """
     input: 
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
+    output:
+        recal = os.path.join(output_germline_base,"vqsr","INDEL.output.AS.recal"),
+        tranches = os.path.join(output_germline_base,"vqsr","INDEL.output.AS.tranches"),
+        rscript = os.path.join(output_germline_base,"vqsr","INDEL.output.plots.AS.R")
+    params: 
+        rname = "vqsr_indel",
+        genome = config['references']['GENOME'],
+        mills=config['references']['MILLS'],
+        dbsnp=config['references']['DBSNP'],
+        axiom=config['references']['AXIOM'],
+        gaussians = config['references']['VQSR']['INDEL']['MAX_GAUSSIANS']
+    message: "Running GATK4 VQSR for germline INDELs"
+    envmodules: 'GATK/4.2.0.0'
+    container: config['images']['wes_base'] 
+    shell:
+        """
+        gatk --java-options '-Xmx24g' VariantRecalibrator \\
+            -V {input.vcf} \\
+            -mode INDEL --trust-all-polymorphic \\
+            -O {output.recal} --tranches-file {output.tranches} --rscript-file {output.rscript} \\
+            -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.5 -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 -tranche 94.0 -tranche 93.5 -tranche 93.0 -tranche 92.0 -tranche 91.0 -tranche 90.0 \\
+            --reference {params.genome} --use-jdk-inflater --use-jdk-deflater -AS \\
+            --resource:mills,known=false,training=true,truth=true,prior=12.0 {params.mills} \\
+            --resource:dbsnp,known=true,training=false,truth=false,prior=2.0 {params.dbsnp} \\
+            --resource:axiomPoly,known=false,training=true,truth=false,prior=10 {params.axiom} \\
+            -an QD -an DP -an FS -an SOR -an ReadPosRankSum -an MQRankSum --max-gaussians {params.gaussians}
+        """
+
+rule apply_snp:
+    """
+    Apply Variant Quality Score Recalibration (VQSR) for SNPs
+    @Input:
+        Multi-sample gVCF
+        Recalibration file from GATK4 VariantRecalibrator in SNP mode
+        Tranches file from GATK4 VariantRecalibrator in SNP mode
+    @Output:
+        gVCF with VQSR annotations
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
+        recal = os.path.join(output_germline_base,"vqsr","SNP.output.AS.recal"),
+        tranches = os.path.join(output_germline_base,"vqsr","SNP.output.AS.tranches",)
+    output:
+        vcf = os.path.join(output_germline_base,"vqsr","snps_recal_variants.vcf.gz"),
+    params: 
+        rname = "apply_snps",
+        genome = config['references']['GENOME'],
+        truth_level = config['references']['VQSR']['SNP']['TRUTH_SENSITIVITY']
+    message: "Applying VQSR for germline SNPs"
+    envmodules: 'GATK/4.2.0.0'
+    container: config['images']['wes_base'] 
+    shell:
+        """
+        gatk --java-options '-Xmx24g' ApplyVQSR \\
+            -V {input.vcf} -mode SNP \\
+            --recal-file {input.recal} --tranches-file {input.tranches} \\
+            -O {output.vcf} \\
+            --truth-sensitivity-filter-level {params.truth_level} \\
+            --create-output-variant-index true \\
+            --reference {params.genome} -AS --use-jdk-inflater --use-jdk-deflater
+        """
+
+rule apply_indel:
+    """
+    Apply Variant Quality Score Recalibration (VQSR) for INDELs
+    @Input:
+        Multi-sample gVCF
+        Recalibration file from GATK4 VariantRecalibrator in INDEL mode
+        Tranches file from GATK4 VariantRecalibrator in INDEL mode
+    @Output:
+        gVCF with VQSR annotations
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"vqsr","snps_recal_variants.vcf.gz"),
+        recal = os.path.join(output_germline_base,"vqsr","INDEL.output.AS.recal"),
+        tranches = os.path.join(output_germline_base,"vqsr","INDEL.output.AS.tranches"),
+    output:
+        vcf = os.path.join(output_germline_base,"VCF","vqsr_variants.vcf.gz"),
+    params: 
+        rname = "apply_indels",
+        genome = config['references']['GENOME'],
+        truth_level = config['references']['VQSR']['INDEL']['TRUTH_SENSITIVITY']
+    message: "Applying VQSR for germline INDELs"
+    envmodules: 'GATK/4.2.0.0'
+    container: config['images']['wes_base'] 
+    shell:
+        """
+        gatk --java-options '-Xmx24g' ApplyVQSR \\
+            -V {input.vcf} -mode INDEL \\
+            --recal-file {input.recal} --tranches-file {input.tranches} \\
+            -O {output.vcf} \\
+            --truth-sensitivity-filter-level {params.truth_level} \\
+            --reference {params.genome} -AS --use-jdk-inflater --use-jdk-deflater
+        """
+
+rule gtype_refinement:
+    """
+    Genotype refinement for germline variants
+    @Input:
+        Multi-sample gVCF
+        Recalibration file from GATK4 VariantRecalibrator in INDEL mode
+        Tranches file from GATK4 VariantRecalibrator in INDEL mode
+    @Output:
+        gVCF with VQSR annotations
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","vqsr_variants.vcf.gz"),
+    output:
+        vcf = temp(os.path.join(output_germline_base,"vqsr","snps_and_indels_recal_refinement_variants.vcf.gz")),
+        gtfix_vcf = os.path.join(output_germline_base,"VCF","refined_germline_variants.vcf.gz"),
+    params: 
+        rname = "gtype_refinement",genome = config['references']['GENOME'],onekg = config['references']['1000GSNP']
+    shell:
+        """
+
+        gatk --java-options '-Xmx24g' CalculateGenotypePosteriors \\
+            -V {input.vcf} -supporting {params.onekg} \\
+            -O {output.vcf} \\    
+            --reference {params.genome} --use-jdk-inflater --use-jdk-deflater 
+
+        bcftools +setGT {input.vcf} -O z -o {output.gtfix_vcf} -- -t a -n u
+        tabix -p vcf {output.gtfix_vcf}
+        """
+
+
+rule Gatk_SelectVariants:
+    """
+    Make individual VCFs with variant sites only in that sample
+    @Input:
+        Multi-sample gVCF with all chromosomes combined
+    @Output:
+        Single-sample VCF with filtered germline variants
+    """
+    input: 
+        vcf = os.path.join(output_germline_base,"VCF","refined_germline_variants.vcf.gz"),
     output: 
+        tmpvcf = temp(os.path.join(output_germline_base,"VCF","{samples}.select.vcf.gz")),
         vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz")
     params: 
         genome=config['references']['GENOME'], 
@@ -181,5 +357,10 @@ rule Gatk_SelectVariants:
             --sample-name {params.Sname} \\
             --exclude-filtered \\
             --exclude-non-variants \\
-            --output {output.vcf}
+            --keep-original-ac \\
+            --output {output.tmpvcf}
+        
+        bcftools +setGT {output.tmpvcf} -O z -o {output.vcf} -- -t a -n u
+        tabix -p vcf {output.vcf}
         """
+
