@@ -38,6 +38,7 @@ function main() {
 	cd "$parent_dir"
 
 	# Create archive as a tarball
+	echo "Creating Archive..."
 	bundle "$2" "$archive"
 }
 
