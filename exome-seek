@@ -373,7 +373,7 @@ def parsed_arguments():
     subparser_run.add_argument('--genome',
         required = True,
         #choices = ['hg38_X', 'mm10_X', 'custom.json'],
-        type = lambda option: str(genome_options(subparser_run, option, ['hg38'])),
+        type = lambda option: str(genome_options(subparser_run, option, ['mm10'])),
         help = argparse.SUPPRESS
     )
     
