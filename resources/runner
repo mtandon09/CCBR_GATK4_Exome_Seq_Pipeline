@@ -221,7 +221,6 @@ function submit(){
 #!/usr/bin/env bash
 #SBATCH --cpus-per-task=32 
 #SBATCH --mem=96g
-#SBATCH --gres=lscratch:500
 #SBATCH --time=5-00:00:00
 #SBATCH --parsable
 #SBATCH -J "$2"
