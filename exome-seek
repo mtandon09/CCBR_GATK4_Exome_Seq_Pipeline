@@ -516,7 +516,7 @@ def parsed_arguments():
         into this string that should NOT be expanded, please quote this options \
         value in single quotes. As an example, on the NCI/NIH FRCE cluster the \
         value of this option would be set to \
-        --tmp-dir \'/scratch/cluster_scratch/${USER}/\', \
+        --tmp-dir \'/scratch/cluster_scratch/$USER/\', \
         default:  \'/lscratch/$SLURM_JOBID/\''
     )
 
