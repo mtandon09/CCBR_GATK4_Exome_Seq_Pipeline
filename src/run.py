@@ -575,6 +575,7 @@ def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Sna
             'snakemake', '-npr',
             '-s', str(snakefile),
             '--use-singularity',
+            '--rerun-incomplete',
             '--cores', str(1),
             '--configfile={}'.format(config)
         ], cwd = outdir,
