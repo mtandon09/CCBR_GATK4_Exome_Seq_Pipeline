@@ -411,7 +411,7 @@ rule multiqc:
         expand(os.path.join(output_qcdir,"{samples}.samtools_flagstat.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.germline.bcftools_stats.txt"), samples=samples),
         expand(os.path.join(output_qcdir,"{samples}.germline.eval.grp"), samples=samples),
-        expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
+        #expand(os.path.join(output_qcdir,"{samples}.germline.snpeff.ann.html"), samples=samples),
         os.path.join(output_qcdir,"raw_variants.het"), 
         os.path.join(output_qcdir,"raw_variants.variant_calling_detail_metrics"),
         # os.path.join(output_germline_base,"somalier","ancestry.somalier-ancestry.tsv"),
