@@ -7,7 +7,7 @@ usage="Usage: $0 <path_to_resource_bundle_directory> <output_archive.tar.gz>"
 function err() { cat <<< "$@" 1>&2; }
 function fatal() { cat <<< "$@" 1>&2; err "$usage"; exit 1; }
 function abspath() { readlink -f "$1"; }
-function bundle() { tar -czvf "$1" "$2"; }
+function bundle() { tar -hczvf "$1" "$2"; }
 
  
 function check() {
