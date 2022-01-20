@@ -185,10 +185,11 @@ rule somatic_mafs:
         rname = 'vcf2maf',
         vcf2maf_script = VCF2MAF_WRAPPER
     threads: 4
-    container:
-        config['images']['vcf2maf'] 
+    # container:
+    #     config['images']['vcf2maf'] 
     shell: """
     echo "Converting to MAF..."
+      
     bash {params.vcf2maf_script} \\
         --vcf {input.filtered_vcf} \\
         --maf {output.maf} \\
