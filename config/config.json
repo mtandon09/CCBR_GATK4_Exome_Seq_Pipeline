@@ -75,7 +75,7 @@
         }
     },
     "scripts": {
-        "vcf2maf_wrapper": "workflow/scripts/vcf2maf_wrapper.bash",
+        "vcf2maf_wrapper": "workflow/scripts/vcf2maf_wrapper.old.bash",
         "freec_p1_config": "workflow/scripts/make_freec_pass1_exome_tn_config.pl",
         "freec_p2_config": "workflow/scripts/make_freec_pass2_exome_tn_config.pl",
         "freec_significance": "workflow/scripts/assess_significance.R",
@@ -84,7 +84,8 @@
         "reformat_bed": "workflow/scripts/reformat_bed.py",
         "genderPrediction": "workflow/scripts/RScripts/predictGender.R",
         "combineSamples": "workflow/scripts/RScripts/combineAllSampleCompareResults.R",
-        "ancestry": "workflow/scripts/RScripts/sampleCompareAncestoryPlots.R"
+        "ancestry": "workflow/scripts/RScripts/sampleCompareAncestoryPlots.R",
+        "sv_plot": "workflow/scripts/annotsv_manta_plot.R"
     },
     "available_somatic_callers": {
         "paired": ["mutect2","strelka","mutect","vardict","varscan"],
