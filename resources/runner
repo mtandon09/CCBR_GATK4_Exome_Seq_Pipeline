@@ -64,7 +64,7 @@ Required Arguments:
                                  this location. On Biowulf, it should be 
                                  set to '/lscratch/\$SLURM_JOBID/'. On FRCE,
                                  this value should be set to the following: 
-                                 '/scratch/cluster_scratch/\${USER}/'.     
+                                 '/scratch/cluster_scratch/\$USER/'.     
 
 OPTIONS:
   -c,  --cache  [Type: Path]   Path to singularity cache. If not provided, 
