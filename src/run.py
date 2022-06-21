@@ -136,13 +136,6 @@ def rename(filename):
         if matched:
             # regex matches with a pattern in extensions
             converted = True
-            # Try to get substring for named group lane, retain this in new file extension
-            # Come back to this later, I am not sure if this is necessary
-            # That string maybe static (i.e. always the same)
-            # https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm#
-            try: new_ext = "_{}{}".format(matched.group('lane'), new_ext)
-            except IndexError: pass # Does not contain the named group lane
-
             filename = re.sub(regex, new_ext, filename)
             break # only rename once
 
@@ -152,7 +145,7 @@ def rename(filename):
         Please rename the file list above before trying again.
         Here is example of acceptable input file extensions:
           sampleName.R1.fastq.gz      sampleName.R2.fastq.gz
-          sampleName_R1_001.fastq.gz  sampleName_R1_001.fastq.gz
+          sampleName_R1_001.fastq.gz  sampleName_R2_001.fastq.gz
           sampleName_1.fastq.gz       sampleName_2.fastq.gz
         Please also check that your input files are gzipped?
         If they are not, please gzip them before proceeding again.
