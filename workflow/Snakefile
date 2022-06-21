@@ -56,13 +56,6 @@ def rename(filename):
         if matched:
             # regex matches with a pattern in extensions
             converted = True
-            # Try to get substring for named group lane, retain this in new file extension
-            # Come back to this later, I am not sure if this is necessary
-            # That string maybe static (i.e. always the same)
-            # https://support.illumina.com/help/BaseSpace_OLH_009008/Content/Source/Informatics/BS/NamingConvention_FASTQ-files-swBS.htm#
-            try: new_ext = "_{}{}".format(matched.group('lane'), new_ext)
-            except IndexError: pass # Does not contain the named group lane
-
             filename = re.sub(regex, new_ext, filename)
             break # only rename once
 
