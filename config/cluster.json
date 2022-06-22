@@ -256,12 +256,7 @@
               "mem":"96G",
               "time": "3-00:00:00",
      },
-     "vqsr_snp":{
-              "threads":"4",
-              "mem":"48G",
-              "time": "5-00:00:00",
-     },
-     "vqsr_indel":{
+     "gatk_vqsr":{
               "threads":"4",
               "mem":"48G",
               "time": "5-00:00:00",
