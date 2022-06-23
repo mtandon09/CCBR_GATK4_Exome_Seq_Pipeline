@@ -151,82 +151,64 @@ rule germline_merge_chrom:
         """
 
 
-rule gatk_vqsr: 
+rule gatk_variantfilter: 
     """
-    Run GATK VQSR on the SNP and INDEls
+    Hard filters on
     @Input:
         Multi-sample gVCF with all chromosomes combined
     @Output:
-        Variants scored by VQSLOD
+       Variants filtered by QD, QUAL, SOR, FS MQ, MQRankSum, ReadPosRankSum, Indels: QD, QUAL, FS, ReadPosRankSum
     """
     input: 
         vcf = os.path.join(output_germline_base,"VCF","raw_variants.vcf.gz"),
     output: 
-       indelvcf = os.path.join(output_germline_base,"VCF","indel.recalibrated.vcf.gz"),
-       snpindelvcf = os.path.join(output_germline_base,"VCF","snp_indel.recalibrated.vcf.gz")
+       indelvcf = os.path.join(output_germline_base,"VCF","indel.filterd.vcf.gz"),
+       snpvcf = os.path.join(output_germline_base,"VCF","snp.filtered.vcf.gz"),
+       vcf = os.path.join(output_germline_base,"VCF","snp_indel.filtered.vcf.gz")
+
     params: 
         genome=config['references']['GENOME'], 
-        mills=config['references']['MILLS'],
-        axiom=config['references']['AXIOM'],
-        dbsnp=config['references']['DBSNP'],
-        hapmap=config['references']['HAPMAP'],
-        omni=config['references']['OMNI'],
-        onekgp=config['references']['1000GSNP'],
-        rname="vqsr",
+        rname="gatk_hardfilters",
         ver_gatk=config['tools']['gatk4']['version']
-    message: "Running GATK4 VQSR on Cohort VCF input file"
+    message: "Running GATK4 hard filters on Cohort VCF input file"
     envmodules: 'GATK/4.2.0.0'
     container: config['images']['wes_base']
     shell:
         """
-        gatk --java-options '-Xmx24g' VariantRecalibrator \\
-        -R {params.genome} \\
+        gatk SelectVariants \\
         -V {input.vcf} \\
-        --trust-all-polymorphic \\
-        -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.5 -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 -tranche 94.0 -tranche 93.5 -tranche 93.0 -tranche 92.0 -tranche 91.0 -tranche 90.0 \\
-        -an FS -an ReadPosRankSum -an MQRankSum -an QD -an SOR -an DP \\
-        -mode INDEL \\
-        --max-gaussians 4 \\
-        -resource:mills,known=false,training=true,truth=true,prior=12 {params.mills} \\
-        -resource:axiomPoly,known=false,training=true,truth=false,prior=10 {params.axiom} \\
-        -resource:dbsnp,known=true,training=false,truth=false,prior=2 {params.dbsnp} \\
-        --tranches-file cohort_indels.tranches \\
-        -O cohort_indels.recal 
+        -select-type SNP \\
+        -O snps.vcf.gz
+        
+        gatk SelectVariants \\
+        -V {input.vcf} \\
+        -select-type INDEL \\
+        -O indels.vcf.gz
 
-        gatk --java-options '-Xmx24g' VariantRecalibrator \\
-        -R {params.genome} \\
-        -V {input.vcf} \\
-        --trust-all-polymorphic \\
-        -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.5 -tranche 99.4 -tranche 99.3 -tranche 99.0 -tranche 98.0 -tranche 97.0 -tranche 90.0 \\
-        --resource:hapmap,known=false,training=true,truth=true,prior=15.0 {params.hapmap} \\
-        --resource:omni,known=false,training=true,truth=false,prior=12.0 {params.omni} \\
-        --resource:1000G,known=false,training=true,truth=false,prior=10.0 {params.onekgp} \\
-        --resource:dbsnp,known=true,training=false,truth=false,prior=2.0 {params.dbsnp} \\
-        -an QD -an MQ -an MQRankSum -an ReadPosRankSum -an FS -an SOR \\
-        -mode SNP \\
-        --max-gaussians 6 \\
-        -O cohort_snps.recal \\
-        --tranches-file output_snp.tranches \\
-        --rscript-file output.plots.SNP.R
+        gatk VariantFiltration \\
+        -V snps.vcf.gz \\
+        -filter "QD < 2.0" --filter-name "QD2" \\
+        -filter "QUAL < 30.0" --filter-name "QUAL30" \\
+        -filter "SOR > 3.0" --filter-name "SOR3" \\
+        -filter "FS > 60.0" --filter-name "FS60" \\
+        -filter "MQ < 40.0" --filter-name "MQ40" \\
+        -filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5" \\
+        -filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \\
+        -O {output.snpvcf}
 
-        gatk --java-options '-Xmx5g' ApplyVQSR \\
-        -V {input.vcf} \\
-        --recal-file  cohort_indels.recal \\
-        --tranches-file cohort_indels.tranches \\
-        --truth-sensitivity-filter-level 99.7 \\
-        --create-output-variant-index true \\
-        -mode INDEL \\
+        gatk VariantFiltration \\
+        -V indels.vcf.gz \\
+        -filter "QD < 2.0" --filter-name "QD2" \\
+        -filter "QUAL < 30.0" --filter-name "QUAL30" \\
+        -filter "FS > 200.0" --filter-name "FS200" \\
+        -filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \\
         -O {output.indelvcf}
         
-        gatk --java-options '-Xmx5g' ApplyVQSR \\
-        -V indel.recalibrated.vcf.gz \\
-        --recal-file cohort_snps.recal \\
-        --tranches-file output_snp.tranches \\
-        --truth-sensitivity-filter-level 99.7 \\
-        --create-output-variant-index true \\
-        -mode SNP \\
-        -O {output.snpindelvcf}
-
+        gatk MergeVcfs \\
+        -R {params.genome} \\
+        --INPUT {output.indelvcf} \\
+        --INPUT {output.snpvcf} \\
+        --OUTPUT {output.vcf}
         """
 
 rule Gatk_SelectVariants:
@@ -238,7 +220,7 @@ rule Gatk_SelectVariants:
         Single-sample VCF with unfiltered germline variants
     """
     input: 
-        vcf = os.path.join(output_germline_base,"VCF","snp_indel.recalibrated.vcf.gz"),
+        vcf = os.path.join(output_germline_base,"VCF","snp_indel.filtered.vcf.gz"),
     output: 
         vcf = os.path.join(output_germline_base,"VCF","{samples}.germline.vcf.gz")
     params: 
