@@ -179,8 +179,7 @@ rule gatk_vqsr:
     container: config['images']['wes_base']
     shell:
         """
-        #gatk --java-options "-Xmx24g -Xms24g" VariantRecalibrator \\
-        gatk --java-options VariantRecalibrator \\
+        gatk --java-options '-Xmx24g' VariantRecalibrator \\
         -R {params.genome}
         -V {input.vcf} \\
         --trust-all-polymorphic \\
@@ -194,7 +193,7 @@ rule gatk_vqsr:
         --tranches-file cohort_indels.tranches \\
         -O cohort_indels.recal 
 
-        gatk --java-options VariantRecalibrator \\
+        gatk --java-options '-Xmx24g' VariantRecalibrator \\
         -R {params.genome} \\
         -V {input.vcf} \\
         --trust-all-polymorphic \\
@@ -210,8 +209,7 @@ rule gatk_vqsr:
         --tranches-file output_snp.tranches \\
         --rscript-file output.plots.SNP.R
 
-#        gatk --java-options "-Xmx5g -Xms5g" ApplyVQSR \\        
-        gatk --java-options ApplyVQSR \\
+        gatk --java-options '-Xmx5g' ApplyVQSR \\
         -V {input.vcf} \\
         --recal-file  cohort_indels.recal \\
         --tranches-file cohort_indels.tranches \\
@@ -220,7 +218,7 @@ rule gatk_vqsr:
         -mode INDEL \\
         -O {output.indelvcf}
         
-        gatk --java-options ApplyVQSR \\
+        gatk --java-options '-Xmx5g' ApplyVQSR \\
         -V indel.recalibrated.vcf.gz \\
         --recal-file cohort_snps.recal \\
         --tranches-file output_snp.tranches \\
