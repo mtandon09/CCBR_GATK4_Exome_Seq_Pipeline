@@ -180,14 +180,14 @@ rule gatk_vqsr:
     shell:
         """
         gatk --java-options '-Xmx24g' VariantRecalibrator \\
-        -R {params.genome}
+        -R {params.genome} \\
         -V {input.vcf} \\
         --trust-all-polymorphic \\
         -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.5 -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 -tranche 94.0 -tranche 93.5 -tranche 93.0 -tranche 92.0 -tranche 91.0 -tranche 90.0 \\
         -an FS -an ReadPosRankSum -an MQRankSum -an QD -an SOR -an DP \\
         -mode INDEL \\
         --max-gaussians 4 \\
-        -resource:mills,known=false,training=true,truth=true,prior=12 {params.mills}\\
+        -resource:mills,known=false,training=true,truth=true,prior=12 {params.mills} \\
         -resource:axiomPoly,known=false,training=true,truth=false,prior=10 {params.axiom} \\
         -resource:dbsnp,known=true,training=false,truth=false,prior=2 {params.dbsnp} \\
         --tranches-file cohort_indels.tranches \\
