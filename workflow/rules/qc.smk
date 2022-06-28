@@ -155,6 +155,8 @@ rule reformat_targets_bed:
     """
     Qualimap requires a 6-field BED file for coverage estimation.
     This rule ensures that the provided BED file will work with it.
+    FREEC also requires a reformatted BED file that does not contain
+    duplicated regions.
     @Input:
         Targets BED file, only first 4 fields required (chr, start, end, label)
     @Output:
