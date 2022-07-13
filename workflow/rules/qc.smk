@@ -177,7 +177,7 @@ rule reformat_targets_bed:
     python {params.script_path_reformat_bed} \\
         --input_bed {input.targets} \\
         --output_bed {output.bed}.temp
-    python {params.script_path_correct_target_bed} {output.bed}.temp {output.bed}
+    python3 {params.script_path_correct_target_bed} {output.bed}.temp {output.bed}
     rm -f {output.bed}.temp
     """
     
