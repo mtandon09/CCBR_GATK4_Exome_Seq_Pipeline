@@ -22,7 +22,7 @@
       "OTHER_SOMATIC_VCFS": {},
       "EXOME_TARGETS": "/data/CCBR_Pipeliner/db/PipeDB/lib/Agilent_SSv7_allExons_hg38.bed",
       "FFPE_FILTER": "false",
-      "CNV_CALLING": "true"
+      "CNV_CALLING": "false"
     },
     "output_params": {
       "FASTQ": "fastqs",
